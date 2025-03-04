@@ -8,21 +8,13 @@
 
 <body>
     <h1>Data User</h1>
-    <table>
+    <table style="border: 2px solid blue;">
         <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Nama</th>
-            <th>ID Level Pengguna</th>
+            <th style="border: 2px solid blue;">Jumlah Pengguna</th>
         </tr>
-        {{-- @foreach ($data as $d) --}}
             <tr>
-                <th>{{$data->user_id}}</th>
-                <th>{{$data->username}}</th>
-                <th>{{$data->nama}}</th>
-                <th>{{$data->level_id}}</th>
+                <th style="border: 2px solid blue;">{{$data}}</th>
             </tr>
-        {{-- @endforeach --}}
     </table>
 </body>
 
