@@ -181,7 +181,7 @@ class UserController extends Controller
         }
 
         try {
-            UserModel::destroy($id); // Hapus data level
+            UserModel::destroy($id); // Hapus data user
             return redirect('/user')->with('success', 'Data user berhasil dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error

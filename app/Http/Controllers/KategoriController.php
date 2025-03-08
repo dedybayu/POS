@@ -79,7 +79,7 @@ class KategoriController extends Controller
     {
         $request->validate([
             'kategori_nama' => 'required|string|max:100',
-            'kategori_kode' => 'required|string|max:5'
+            'kategori_kode' => 'required|string|max:5|unique:m_kategori,kategori_kode'
         ]);
 
         KategoriModel::create([
@@ -145,7 +145,7 @@ class KategoriController extends Controller
     {
         $request->validate([
             'kategori_nama' => 'required|string|max:100',
-            'kategori_kode' => 'required|string|max:5'
+            'kategori_kode' => 'required|string|max:5|unique:m_kategori,kategori_kode'
         ]);
 
         KategoriModel::find($id)->update([

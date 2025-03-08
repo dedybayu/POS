@@ -77,7 +77,7 @@ class LevelController extends Controller
     {
         $request->validate([
             'level_nama' => 'required|string|max:100',
-            'level_kode' => 'required|string|max:5'
+            'level_kode' => 'required|string|max:5|unique:m_level,level_kode'
         ]);
 
         LevelModel::create([
@@ -144,7 +144,7 @@ class LevelController extends Controller
     {
         $request->validate([
             'level_nama' => 'required|string|max:100',
-            'level_kode' => 'required|string|max:5'
+            'level_kode' => 'required|string|max:5|unique:m_level,level_kode'
         ]);
 
         levelModel::find($id)->update([
@@ -154,7 +154,7 @@ class LevelController extends Controller
 
         return redirect('/level')->with('success', 'Data level berhasil diubah');
     }
-    
+
     // Menghapus data level
     public function destroy(string $id)
     {

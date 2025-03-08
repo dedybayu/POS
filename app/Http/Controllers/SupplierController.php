@@ -78,7 +78,7 @@ class SupplierController extends Controller
         $request->validate([
             'supplier_nama' => 'required|string|max:100',
             'supplier_alamat' => 'required|string|max:100',
-            'supplier_kode' => 'required|string|max:5'
+            'supplier_kode' => 'required|string|max:5|unique:m_supplier,supplier_kode'
         ]);
 
         SupplierModel::create([
@@ -143,7 +143,7 @@ class SupplierController extends Controller
         $request->validate([
             'supplier_nama' => 'required|string|max:100',
             'supplier_alamat' => 'required|string|max:100',
-            'supplier_kode' => 'required|string|max:5'
+            'supplier_kode' => 'required|string|max:5|unique:m_supplier,supplier_kode'
         ]);
 
         SupplierModel::find($id)->update([
