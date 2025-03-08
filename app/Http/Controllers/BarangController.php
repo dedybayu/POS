@@ -52,4 +52,29 @@ class BarangController extends Controller
             })->rawColumns(['aksi'])
             ->make(true);
     }
+
+
+    // Menampilkan detail barang
+    public function show(string $id)
+    {
+        $barang = BarangModel::with('kategori')->find($id);
+
+        $breadcrumb = (object) [
+            'title' => 'Detail barang',
+            'list' => ['Home', 'barang', 'Detail']
+        ];
+
+        $page = (object) [
+            'title' => 'Detail barang'
+        ];
+
+        $activeMenu = 'barang'; // set menu yang sedang aktif
+
+        return view('barang.show', [
+            'breadcrumb' => $breadcrumb,
+            'page' => $page,
+            'barang' => $barang,
+            'activeMenu' => $activeMenu
+        ]);
+    }
 }
