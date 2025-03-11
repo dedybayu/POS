@@ -83,7 +83,7 @@ class BarangController extends Controller
     {
         // dd($request);
         $request->validate([
-            'barang_kode' => 'required|string|max:5|unique:m_barang,barang_kode',
+            'barang_kode' => 'required|string|max:10|unique:m_barang,barang_kode',
             'barang_nama' => 'required|string|max:100',
             'harga_beli' => 'required|integer',
             'harga_jual' => 'required|integer',
