@@ -143,16 +143,25 @@ class SupplierController extends Controller
         $request->validate([
             'supplier_nama' => 'required|string|max:100',
             'supplier_alamat' => 'required|string|max:100',
-            'supplier_kode' => 'required|string|max:5|unique:m_supplier,supplier_kode'
+            'supplier_kode' => 'required|string|max:5'
         ]);
 
-        SupplierModel::find($id)->update([
-            'supplier_nama' => $request->supplier_nama,
-            'supplier_alamat' => $request->supplier_nama,
-            'supplier_kode' => $request->supplier_kode,
-        ]);
+        try {
+            $supplier = SupplierModel::find($id);
 
-        return redirect('/supplier')->with('success', 'Data supplier berhasil diubah');
+            if (!$supplier) {
+                return redirect('/supplier')->with('error', 'Data Supplier tidak ditemukan');
+            }
+            SupplierModel::find($id)->update([
+                'supplier_nama' => $request->supplier_nama,
+                'supplier_alamat' => $request->supplier_alamat,
+                'supplier_kode' => $request->supplier_kode,
+            ]);
+
+            return redirect('/supplier')->with('success', 'Data supplier berhasil diubah');
+        } catch (\Exception $e) {
+            return redirect('/supplier')->with('error', 'Gagal Update (kode sudah terpakai)');
+        }
     }
 
 

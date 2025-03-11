@@ -145,16 +145,25 @@ class KategoriController extends Controller
     {
         $request->validate([
             'kategori_nama' => 'required|string|max:100',
-            'kategori_kode' => 'required|string|max:5|unique:m_kategori,kategori_kode'
+            'kategori_kode' => 'required|string|max:5'
         ]);
 
-        KategoriModel::find($id)->update([
-            'kategori_nama' => $request->kategori_nama,
-            'kategori_kode' => $request->kategori_kode,
-        ]);
+        try {
+            $kategori = KategoriModel::find($id);
 
-        return redirect('/kategori')->with('success', 'Data kategori berhasil diubah');
+            if (!$kategori) {
+                return redirect('/kategori')->with('error', 'Data Kategori tidak ditemukan');
+            }
+            KategoriModel::find($id)->update([
+                'kategori_nama' => $request->kategori_nama,
+                'kategori_kode' => $request->kategori_kode,
+            ]);
+            return redirect('/kategori')->with('success', 'Data kategori berhasil diubah');
+        } catch (\Exception $e) {
+            return redirect('/kategori')->with('error', 'Gagal Update (kode sudah terpakai)');
+        }
     }
+
 
 
     // Menghapus data kategori

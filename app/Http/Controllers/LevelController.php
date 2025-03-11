@@ -144,16 +144,27 @@ class LevelController extends Controller
     {
         $request->validate([
             'level_nama' => 'required|string|max:100',
-            'level_kode' => 'required|string|max:5|unique:m_level,level_kode'
+            'level_kode' => 'required|string|max:5'
         ]);
-
-        levelModel::find($id)->update([
-            'level_nama' => $request->level_nama,
-            'level_kode' => $request->level_kode,
-        ]);
-
-        return redirect('/level')->with('success', 'Data level berhasil diubah');
+    
+        try {
+            $level = LevelModel::find($id);
+    
+            if (!$level) {
+                return redirect('/level')->with('error', 'Data level tidak ditemukan');
+            }
+    
+            $level->update([
+                'level_nama' => $request->level_nama,
+                'level_kode' => $request->level_kode,
+            ]);
+    
+            return redirect('/level')->with('success', 'Data level berhasil diubah');
+        } catch (\Exception $e) {
+            return redirect('/level')->with('error', 'Gagal Update (kode sudah terpakai)');
+        }
     }
+    
 
     // Menghapus data level
     public function destroy(string $id)
