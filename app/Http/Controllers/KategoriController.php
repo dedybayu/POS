@@ -63,13 +63,11 @@ class KategoriController extends Controller
             'title' => 'Tambah kategori baru'
         ];
 
-        $kategori = KategoriModel::all(); // ambil data kategori untuk ditampilkan di form
         $activeMenu = 'kategori'; // set menu yang sedang aktif
 
         return view('kategori.create', [
             'breadcrumb' => $breadcrumb,
             'page' => $page,
-            'kategori' => $kategori,
             'activeMenu' => $activeMenu
         ]);
     }

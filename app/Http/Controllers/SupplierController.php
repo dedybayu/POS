@@ -61,13 +61,11 @@ class SupplierController extends Controller
             'title' => 'Tambah supplier baru'
         ];
 
-        $supplier = SupplierModel::all(); // ambil data supplier untuk ditampilkan di form
         $activeMenu = 'supplier'; // set menu yang sedang aktif
 
         return view('supplier.create', [
             'breadcrumb' => $breadcrumb,
             'page' => $page,
-            'supplier' => $supplier,
             'activeMenu' => $activeMenu
         ]);
     }

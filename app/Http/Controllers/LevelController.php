@@ -32,11 +32,6 @@ class LevelController extends Controller
     {
         $levels = LevelModel::select('level_id', 'level_nama', 'level_kode');
 
-        //Filter berdasarkan level
-        if ($request->level_id) {
-            $levels->where('level_id', $request->level_id);
-        }
-
         return DataTables::of($levels)
             ->addIndexColumn()->addColumn('aksi', function ($level) {
                 $btn = '<a href="' . url('/level/' . $level->level_id) . '" class="btn btn-info btn-sm">Detail</a> ';
@@ -61,13 +56,11 @@ class LevelController extends Controller
             'title' => 'Tambah level baru'
         ];
 
-        $level = LevelModel::all(); // ambil data level untuk ditampilkan di form
         $activeMenu = 'level'; // set menu yang sedang aktif
 
         return view('level.create', [
             'breadcrumb' => $breadcrumb,
             'page' => $page,
-            'level' => $level,
             'activeMenu' => $activeMenu
         ]);
     }
