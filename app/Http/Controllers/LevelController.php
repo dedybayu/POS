@@ -157,6 +157,12 @@ class LevelController extends Controller
     }
 
 
+    public function show_ajax(string $id)
+    {
+        $level = LevelModel::find($id);
+
+        return view('level.show_ajax', ['level' => $level]);
+    }
 
 
     // Menampilkan halaman form edit level
@@ -210,6 +216,81 @@ class LevelController extends Controller
     }
 
 
+    public function edit_ajax(string $id)
+    {
+        // return "Berhasil";
+        $level = LevelModel::find($id);
+
+        return view('level.edit_ajax', ['level' => $level]);
+    }
+
+    public function update_ajax(Request $request, $id)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'level_nama' => 'required|string|max:100',
+                'level_kode' => 'required|string|max:5|unique:m_level,level_kode,' . $id . ',level_id'
+            ];
+    
+            $messages = [
+                'level_kode.unique' => 'Kode Sudah Digunakan'
+            ];
+    
+            $validator = Validator::make($request->all(), $rules, $messages);
+    
+            if ($validator->fails()) {
+                $errorMessage = 'Validasi Gagal';
+                if ($validator->errors()->has('level_kode')) {
+                    $errorMessage = 'Validasi Gagal (Kode Sudah Digunakan)';
+                }
+    
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage,
+                    'msgField' => $validator->errors()
+                ]);
+            }
+    
+            $level = LevelModel::find($id);
+            if ($level) {
+                $level->update($request->all());
+                return response()->json(['status' => true, 'message' => 'Data level berhasil diperbarui']);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Data level tidak ditemukan']);
+            }
+        }
+        return redirect('/');
+    }
+    
+
+
+    public function comfirm_ajax(string $id)
+    {
+        $level = LevelModel::find($id);
+
+        return view('level.comfirm_ajax', ['level' => $level]);
+    }
+
+    public function delete_ajax(Request $request, $id)
+    {
+        // cek apakah request dari ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            $level = LevelModel::find($id);
+            if ($level) {
+                $level->delete();
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Data berhasil dihapus'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+        }
+        return redirect('/');
+    }
     // Menghapus data level
     public function destroy(string $id)
     {

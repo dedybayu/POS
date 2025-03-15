@@ -16,9 +16,6 @@
             <label>Kode Level</label>
             <input type="text" name="level_kode" id="level_kode" class="form-control" required>
             <small id="error-kode" class="error-text form-text text-danger"></small>
-            @error('level_kode')
-                <small class="form-text text-danger">{{ $message }}</small>
-            @enderror
         </div>
     </div>
     <div class="modal-footer">
