@@ -82,10 +82,17 @@ Route::group(['prefix' => 'supplier'], function () {
     Route::get('/', [SupplierController::class, 'index']);
     Route::post('/list', [SupplierController::class, 'list']);
     Route::get('/create', [SupplierController::class, 'create']);
+    Route::get('/create_ajax', [SupplierController::class, 'create_ajax']);
     Route::post('/', [SupplierController::class, 'store']);
+    Route::post('/ajax', [SupplierController::class, 'store_ajax']);
     Route::get('/{id}', [SupplierController::class, 'show']);
+    Route::get('/{id}/show_ajax', [SupplierController::class, 'show_ajax']);
     Route::get('/{id}/edit', [SupplierController::class, 'edit']);
     Route::put('/{id}', [SupplierController::class, 'update']);
+    Route::get('/{id}/edit_ajax', [SupplierController::class, 'edit_ajax']);
+    Route::put('/{id}/update_ajax', [SupplierController::class, 'update_ajax']);
+    Route::get('/{id}/delete_ajax', [SupplierController::class, 'comfirm_ajax']);
+    Route::delete('/{id}/delete_ajax', [SupplierController::class, 'delete_ajax']);
     Route::delete('/{id}', [SupplierController::class, 'destroy']);
 });
 
