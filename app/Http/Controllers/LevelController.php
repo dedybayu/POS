@@ -264,7 +264,7 @@ class LevelController extends Controller
     
 
 
-    public function comfirm_ajax(string $id)
+    public function confirm_ajax(string $id)
     {
         $level = LevelModel::find($id);
 

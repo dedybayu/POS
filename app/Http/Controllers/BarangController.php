@@ -301,7 +301,7 @@ class BarangController extends Controller
     }
 
 
-    public function comfirm_ajax(string $id)
+    public function confirm_ajax(string $id)
     {
         $barang = BarangModel::find($id);
         $kategori = KategoriModel::select('kategori_nama')

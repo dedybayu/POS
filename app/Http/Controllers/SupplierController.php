@@ -273,7 +273,7 @@ class SupplierController extends Controller
     }
 
 
-    public function comfirm_ajax(string $id)
+    public function confirm_ajax(string $id)
     {
         $supplier = SupplierModel::find($id);
 
