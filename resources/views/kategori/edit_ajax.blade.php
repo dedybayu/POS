@@ -48,7 +48,7 @@
         $(document).ready(function () {
             $("#form-edit").validate({
                 rules: {
-                    nama: { required: true, minlength: 3, maxlength: 100 },
+                    kategori_nama: { required: true, minlength: 3, maxlength: 100 },
                     kategori_kode: { required: true, maxlength: 5 }
                 },
                 submitHandler: function (form) {
