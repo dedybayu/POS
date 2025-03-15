@@ -39,6 +39,6 @@
         <button onclick="modalAction('{{ url('/level/' . $level->level_id . '/edit_ajax') }}')" 
             class="btn btn-success btn-sm">Edit
         </button>
-        <button type="button" data-dismiss="modal" class="btn btn-primary">Close</button>
+        <button type="button" data-dismiss="modal" class="btn btn-primary btn-sm">Close</button>
     </div>
 @endempty
