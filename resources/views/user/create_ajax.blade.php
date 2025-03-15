@@ -55,7 +55,7 @@
                     data: $(form).serialize(),
                     success: function(response) {
                         if (response.status) {
-                            $('#modal-tambah').modal('hide');
+                            $('#modal-crud').modal('hide');
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil',

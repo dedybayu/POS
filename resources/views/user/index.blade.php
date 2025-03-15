@@ -52,7 +52,7 @@
     </div>
 
     {{-- Modal Container --}}
-    <div id="modal-tambah" class="modal fade animate shake" tabindex="-1" role="dialog"
+    <div id="modal-crud" class="modal fade animate shake" tabindex="-1" role="dialog"
         data-backdrop="static" data-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content"></div>
@@ -68,18 +68,18 @@
     <script>
         function modalAction(url) {
             // Kosongkan modal sebelum memuat konten baru
-            $("#modal-tambah .modal-content").html("");
+            $("#modal-crud .modal-content").html("");
 
             // Panggil modal melalui AJAX
             $.get(url, function(response) {
-                $("#modal-tambah .modal-content").html(response);
-                $("#modal-tambah").modal("show");
+                $("#modal-crud .modal-content").html(response);
+                $("#modal-crud").modal("show");
             });
         }
 
         // Bersihkan isi modal setelah ditutup
-        $('#modal-tambah').on('hidden.bs.modal', function () {
-            $("#modal-tambah .modal-content").html("");
+        $('#modal-crud').on('hidden.bs.modal', function () {
+            $("#modal-crud .modal-content").html("");
         });
 
         var dataUser;
