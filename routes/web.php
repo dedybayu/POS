@@ -46,10 +46,17 @@ Route::group(['prefix' => 'level'], function () {
     Route::get('/', [LevelController::class, 'index']);
     Route::post('/list', [LevelController::class, 'list']);
     Route::get('/create', [LevelController::class, 'create']);
+    Route::get('/create_ajax', [LevelController::class, 'create_ajax']);
     Route::post('/', [LevelController::class, 'store']);
+    Route::post('/ajax', [LevelController::class, 'store_ajax']);
     Route::get('/{id}', [LevelController::class, 'show']);
+    Route::get('/{id}/show_ajax', [LevelController::class, 'show_ajax']);
     Route::get('/{id}/edit', [LevelController::class, 'edit']);
     Route::put('/{id}', [LevelController::class, 'update']);
+    Route::get('/{id}/edit_ajax', [LevelController::class, 'edit_ajax']);
+    Route::put('/{id}/update_ajax', [LevelController::class, 'update_ajax']);
+    Route::get('/{id}/delete_ajax', [LevelController::class, 'comfirm_ajax']);
+    Route::delete('/{id}/delete_ajax', [LevelController::class, 'delete_ajax']);
     Route::delete('/{id}', [LevelController::class, 'destroy']);
 });
 
@@ -90,18 +97,18 @@ Route::group(['prefix' => 'barang'], function () {
 
 
 
-Route::get('/product', [ProductController::class, 'index']);
+// Route::get('/product', [ProductController::class, 'index']);
 
-Route::prefix('category')->group(function () {
-    Route::get('/', [ProductController::class, 'index']);
-    Route::get('/food-beverage', [ProductController::class, 'foodBeverage']);
-    Route::get('/beauty-health', [ProductController::class, 'beautyHealth']);
-    Route::get('/home-care', [ProductController::class, 'homeCare']);
-    Route::get('/baby-kid', [ProductController::class, 'babyKid']);
-});
+// Route::prefix('category')->group(function () {
+//     Route::get('/', [ProductController::class, 'index']);
+//     Route::get('/food-beverage', [ProductController::class, 'foodBeverage']);
+//     Route::get('/beauty-health', [ProductController::class, 'beautyHealth']);
+//     Route::get('/home-care', [ProductController::class, 'homeCare']);
+//     Route::get('/baby-kid', [ProductController::class, 'babyKid']);
+// });
 
-Route::get('/user/{id}/name/{name}', [UserController::class, 'index']);
-Route::get('/penjualan', [PenjualanController::class, 'index']);
+// Route::get('/user/{id}/name/{name}', [UserController::class, 'index']);
+// Route::get('/penjualan', [PenjualanController::class, 'index']);
 
 // Route::get('/level', [LevelController::class, 'index']);
 // Route::get('/kategori', [KategoriController::class, 'index']);
