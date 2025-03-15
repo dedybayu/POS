@@ -277,7 +277,7 @@ class SupplierController extends Controller
     {
         $supplier = SupplierModel::find($id);
 
-        return view('supplier.comfirm_ajax', ['supplier' => $supplier]);
+        return view('supplier.confirm_ajax', ['supplier' => $supplier]);
     }
 
     public function delete_ajax(Request $request, $id)

@@ -270,7 +270,7 @@ class UserController extends Controller
     {
         $user = UserModel::find($id);
 
-        return view('user.comfirm_ajax', ['user' => $user]);
+        return view('user.confirm_ajax', ['user' => $user]);
     }
 
     public function delete_ajax(Request $request, $id)
