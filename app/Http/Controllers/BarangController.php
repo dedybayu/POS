@@ -317,11 +317,18 @@ class BarangController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             $barang = BarangModel::find($id);
             if ($barang) {
-                $barang->delete();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data berhasil dihapus'
-                ]);
+                try {
+                    $barang->delete();
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data berhasil dihapus'
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+                    ]);
+                }
             } else {
                 return response()->json([
                     'status' => false,

@@ -269,7 +269,6 @@ class UserController extends Controller
     public function confirm_ajax(string $id)
     {
         $user = UserModel::find($id);
-
         return view('user.confirm_ajax', ['user' => $user]);
     }
 
@@ -277,13 +276,23 @@ class UserController extends Controller
     {
         // cek apakah request dari ajax
         if ($request->ajax() || $request->wantsJson()) {
+            // try {
+
             $user = UserModel::find($id);
             if ($user) {
-                $user->delete();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Data berhasil dihapus'
-                ]);
+                try {
+                    $user->delete();
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data berhasil dihapus'
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // Jika terjadi error ketika menghapus data, redirect kembali ke halaman dengan membawa pesan error
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+                    ]);
+                }
             } else {
                 return response()->json([
                     'status' => false,
