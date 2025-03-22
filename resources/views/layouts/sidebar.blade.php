@@ -53,6 +53,18 @@
                         class="nav-icon fas fa-cash-register"></i>
                     <p>Transaksi Penjualan</p>
                 </a> </li>
+
+            <li class="nav-header">Logout</li>
+            <li class="">
+                <div class="nav-link">
+                    <button class=" btn btn-secondary" data-toggle="modal" data-target="#logoutModal">
+                        Logout
+                    </button>
+                </div>
+            </li>
+
+
+
         </ul>
     </nav>
 </div>
