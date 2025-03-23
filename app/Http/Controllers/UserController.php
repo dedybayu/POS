@@ -276,7 +276,16 @@ class UserController extends Controller
     {
         // cek apakah request dari ajax
         if ($request->ajax() || $request->wantsJson()) {
-            // try {
+            // Ambil user yang sedang login
+            $currentUser = auth()->user();
+
+            // Cek apakah user yang akan dihapus adalah user yang sedang login
+            if ($currentUser->user_id == $id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Anda tidak dapat menghapus akun Anda sendiri.'
+                ]);
+            }
 
             $user = UserModel::find($id);
             if ($user) {

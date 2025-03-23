@@ -52,7 +52,7 @@
                                 <span class="fas fa-lock"></span>
                             </div>
                         </div>
-                        <small id="error-password" class="error-text text-danger"></small>
+                        <small id="error-login-password" class="error-text text-danger"></small>
                     </div>
                     <p class="text-muted small">
                         Don’t have an account yet?
@@ -158,7 +158,7 @@
                             } else { // jika error
                                 $('.error-text').text('');
                                 $.each(response.msgField, function (prefix, val) {
-                                    $('#error-' + prefix).text(val[0]);
+                                    $('#error-login' + prefix).text(val[0]);
                                 });
                                 Swal.fire({
                                     icon: 'error',

@@ -57,9 +57,6 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
             Route::delete('/{id}/delete_ajax', [UserController::class, 'delete_ajax']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
         });
-    });
-
-    Route::middleware(['authorize:ADM'])->group(function () {
         Route::group(['prefix' => 'level'], function () {
             Route::get('/', [LevelController::class, 'index']);
             Route::post('/list', [LevelController::class, 'list']);
