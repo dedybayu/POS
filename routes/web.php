@@ -54,7 +54,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
         });
     });
 
-    Route::middleware(['authorize:ADM,MNG'])->group(function () {
+    Route::middleware(['authorize:ADM'])->group(function () {
         Route::group(['prefix' => 'level'], function () {
             Route::get('/', [LevelController::class, 'index']);
             Route::post('/list', [LevelController::class, 'list']);
@@ -132,13 +132,6 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
             Route::delete('/{id}', [BarangController::class, 'destroy']);
         });
     });
-
-
-
-
-
-
-
 });
 
 
