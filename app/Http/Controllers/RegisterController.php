@@ -14,7 +14,7 @@ class RegisterController extends Controller
      */
     public function index()
     {
-        $level = LevelModel::select('level_id', 'level_nama')->get();
+        $level = LevelModel::select('level_id', 'level_nama', 'level_kode')->get();
 
         return view('register.register')->with('level', $level);
     }
