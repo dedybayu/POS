@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\BarangModel;
 use App\Models\KategoriModel;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -186,9 +188,9 @@ class BarangController extends Controller
     {
         $barang = BarangModel::find($id);
         $kategori = KategoriModel::select('kategori_nama')
-        ->where('kategori_id', $barang->kategori_id)
-        ->first();
-    
+            ->where('kategori_id', $barang->kategori_id)
+            ->first();
+
         return view('barang.show_ajax', ['barang' => $barang, 'kategori' => $kategori]);
     }
 
@@ -305,9 +307,9 @@ class BarangController extends Controller
     {
         $barang = BarangModel::find($id);
         $kategori = KategoriModel::select('kategori_nama')
-        ->where('kategori_id', $barang->kategori_id)
-        ->first();
-    
+            ->where('kategori_id', $barang->kategori_id)
+            ->first();
+
         return view('barang.confirm_ajax', ['barang' => $barang, 'kategori' => $kategori]);
     }
 
@@ -357,5 +359,116 @@ class BarangController extends Controller
                 'Data barang gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
             );
         }
+    }
+
+    public function import()
+    {
+        return view('barang.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        // return "HELLO";
+        // dd($request->file('file_barang')->getRealPath());
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                // validasi file harus xls atau xlsx, max 1MB
+                'file_barang' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+
+            $file = $request->file('file_barang');
+
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
+
+            // Nama file unik
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            // Pastikan folder penyimpanan ada
+            $destinationPath = storage_path('app/public/file_barang');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $filename);
+
+            $filePathRelative = "file_barang/$filename";
+            $filePath = storage_path("app/public/file_barang/$filename"); // Simpan path gambar
+
+            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
+            $reader->setReadDataOnly(true); // hanya membaca data
+            $spreadsheet = $reader->load($filePath); // load file excel
+            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
+            $data = $sheet->toArray(null, false, true, true); // ambil data excel
+            $insert = [];
+
+            // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            if (count($data) > 1) { // jika data lebih dari 1 baris
+                $existingCodes = BarangModel::pluck('barang_kode')->toArray();
+
+                foreach ($data as $baris => $value) {
+                    if ($baris > 1) { // baris ke-1 adalah header, maka lewati
+                        if (!in_array($value['B'], $existingCodes)) { // Memastikan barang_kode unik
+                            $insert[] = [
+                                'kategori_id' => $value['A'],
+                                'barang_kode' => $value['B'],
+                                'barang_nama' => $value['C'],
+                                'harga_beli' => $value['D'],
+                                'harga_jual' => $value['E'],
+                                'created_at' => now(),
+                            ];
+                        }
+                    }
+                }
+
+                if (count($insert) > 0) {
+                    try {
+                        BarangModel::insert($insert); // Insert data baru yang unik
+                        if (count($insert) == count($data)) {
+                            return response()->json([
+                                'status' => true,
+                                'message' => 'Semua ('.count($insert).') Data berhasil diimport'
+                            ]);
+                        } else {
+                            return response()->json([
+                                'status' => true,
+                                'message' => count($insert). ' Data berhasil diimport, Namun beberapa data Gagal karena duplikasi Kode'
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Terjadi kesalahan "Data Tidak Valid"'
+                        ]);
+                    }
+
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Tidak ada data yang diimport karena kode barang sudah ada'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang diimport'
+                ]);
+            }
+        }
+        return redirect('/');
     }
 }
