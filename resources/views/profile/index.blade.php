@@ -18,7 +18,7 @@
     </div>
 @else
     <div class="modal-header">
-        <h5 class="modal-title">Data User</h5>
+        <h5 class="modal-title">Profile User</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
