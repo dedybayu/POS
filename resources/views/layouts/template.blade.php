@@ -73,7 +73,8 @@
     <!-- ./wrapper -->
 
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
@@ -94,7 +95,31 @@
     </div>
 
 
+    {{-- Modal Profile --}}
+    <div id="modal-profile" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static"
+        data-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content"></div>
+        </div>
+    </div>
+    <script>
+        //MODAL profile
+        function modalAction(url) {
+            // Kosongkan modal sebelum memuat konten baru
+            $("#modal-profile .modal-content").html("");
 
+            // Panggil modal melalui AJAX
+            $.get(url, function (response) {
+                $("#modal-profile .modal-content").html(response);
+                $("#modal-profile").modal("show");
+            });
+        }
+
+        // Bersihkan isi modal setelah ditutup
+        $('#modal-profile').on('hidden.bs.modal', function () {
+            $("#modal-profile .modal-content").html("");
+        });
+    </script>
     <!-- jQuery -->
     <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
 
@@ -118,11 +143,12 @@
     <!-- jquery validation -->
     <script src="{{ asset('adminlte/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
     <script src="{{ asset('adminlte/plugins/jquery-validation/additional-methods.min.js') }}"></script>
-    
+
     <!-- Sweet alert2 -->
-    
+
     <script src="{{ asset('adminlte/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
-    {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+    {{--
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
 
     <!-- AdminLTE App -->
