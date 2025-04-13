@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\SupplierModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -327,5 +330,204 @@ class SupplierController extends Controller
                 'Data supplier gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
             );
         }
+    }
+
+
+
+
+    public function import()
+    {
+        return view('supplier.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        // return "HELLO";
+        // dd($request->file('file_supplier')->getRealPath());
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                // validasi file harus xls atau xlsx, max 1MB
+                'file_supplier' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+
+            $file = $request->file('file_supplier');
+
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
+
+            // Nama file unik
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            // Pastikan folder penyimpanan ada
+            $destinationPath = storage_path('app/public/file_supplier');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $filename);
+
+            $filePathRelative = "file_supplier/$filename";
+            $filePath = storage_path("app/public/file_supplier/$filename"); // Simpan path gambar
+
+            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
+            $reader->setReadDataOnly(true); // hanya membaca data
+            $spreadsheet = $reader->load($filePath); // load file excel
+            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
+            $data = $sheet->toArray(null, false, true, true); // ambil data excel
+
+
+            // Validasi Header
+            $expectedHeader = ['A' => 'supplier_kode', 'B' => 'supplier_nama', 'C' => 'supplier_alamat'];
+            $actualHeader = $data[1] ?? [];
+
+            foreach ($expectedHeader as $col => $expected) {
+                if (trim($actualHeader[$col] ?? '') !== $expected) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
+
+            // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            $existingCodes = SupplierModel::pluck('supplier_kode')->toArray();
+            $insert = [];
+            $excelCodes = []; // Cek duplikat dalam Excel
+            $jumlahBarisData = 0;
+
+            foreach ($data as $baris => $value) {
+                if ($baris > 1) {
+                    $jumlahBarisData++;
+
+                    $kode = trim($value['A'] ?? '');
+                    $nama = trim($value['B'] ?? '');
+                    $alamat = trim($value['C'] ?? '');
+
+                    // Validasi data tidak kosong dan unik
+                    if (
+                        $kode && $nama &&
+                        !in_array($kode, $existingCodes) &&
+                        !in_array($kode, $excelCodes)
+                    ) {
+                        $insert[] = [
+                            'supplier_kode' => $kode,
+                            'supplier_nama' => $nama,
+                            'supplier_alamat' => $alamat,
+                            'created_at' => now(),
+                        ];
+                        $excelCodes[] = $kode;
+                    }
+                }
+            }
+
+            if (count($insert) > 0) {
+                try {
+                    SupplierModel::insert($insert);
+                    if (count($insert) == $jumlahBarisData) {
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena duplikasi kode atau data tidak lengkap'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang valid untuk diimport (semua data duplikat atau tidak valid)'
+                ]);
+            }
+        }
+
+        return redirect('/');
+    }
+
+    public function export_excel()
+    {
+        $supplier = SupplierModel::select('supplier_id', 'supplier_kode', 'supplier_nama', 'supplier_alamat')
+            ->orderBy('supplier_id')
+            ->orderBy('supplier_kode')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Kode supplier');
+        $sheet->setCellValue('C1', 'Nama supplier');
+        $sheet->setCellValue('D1', 'Alamat supplier');
+
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true);
+        $no = 1;
+        $baris = 2;
+
+        foreach ($supplier as $key => $data) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $data->supplier_kode);
+            $sheet->setCellValue('C' . $baris, $data->supplier_nama);
+            $sheet->setCellValue('D' . $baris, $data->supplier_alamat);
+            $no++;
+            $baris++;
+        }
+
+        foreach (range('A', 'D') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data supplier');
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data supplier_' . date('Y-m-d H:i:s') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $supplier = SupplierModel::select('supplier_id', 'supplier_kode', 'supplier_nama', 'supplier_alamat')
+            ->orderBy('supplier_id')
+            ->orderBy('supplier_kode')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $pdf = Pdf::loadView('supplier.export_pdf', ['supplier' => $supplier]);
+        $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+        $pdf->render();
+
+        return $pdf->stream('Data supplier ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }
