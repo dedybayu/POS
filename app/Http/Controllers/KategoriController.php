@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\KategoriModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use DB;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -48,7 +51,7 @@ class KategoriController extends Controller
                 //     '<button type="submit" class="btn btn-danger btn-sm" 
                 //     onclick="return confirm(\'Apakah Anda yakit menghapus data ini?\');">Hapus</button></form>';
                 // return $btn;
-
+    
                 $btn = '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
                     '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
@@ -234,26 +237,26 @@ class KategoriController extends Controller
                 'kategori_nama' => 'required|string|max:100',
                 'kategori_kode' => 'required|string|max:5|unique:m_kategori,kategori_kode,' . $id . ',kategori_id'
             ];
-    
+
             $messages = [
                 'kategori_kode.unique' => 'Kode Sudah Digunakan'
             ];
-    
+
             $validator = Validator::make($request->all(), $rules, $messages);
-    
+
             if ($validator->fails()) {
                 $errorMessage = 'Validasi Gagal';
                 if ($validator->errors()->has('kategori_kode')) {
                     $errorMessage = 'Validasi Gagal (Kode Sudah Digunakan)';
                 }
-    
+
                 return response()->json([
                     'status' => false,
                     'message' => $errorMessage,
                     'msgField' => $validator->errors()
                 ]);
             }
-    
+
             $kategori = KategoriModel::find($id);
             if ($kategori) {
                 $kategori->update($request->all());
@@ -321,4 +324,186 @@ class KategoriController extends Controller
             );
         }
     }
+
+
+
+    public function import()
+    {
+        return view('kategori.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        // return "HELLO";
+        // dd($request->file('file_kategori')->getRealPath());
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                // validasi file harus xls atau xlsx, max 1MB
+                'file_kategori' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+
+            $file = $request->file('file_kategori');
+
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
+
+            // Nama file unik
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            // Pastikan folder penyimpanan ada
+            $destinationPath = storage_path('app/public/file_kategori');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $filename);
+
+            $filePathRelative = "file_kategori/$filename";
+            $filePath = storage_path("app/public/file_kategori/$filename"); // Simpan path gambar
+
+            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
+            $reader->setReadDataOnly(true); // hanya membaca data
+            $spreadsheet = $reader->load($filePath); // load file excel
+            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
+            $data = $sheet->toArray(null, false, true, true); // ambil data excel
+            $insert = [];
+
+            // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            $existingCodes = KategoriModel::pluck('kategori_kode')->toArray();
+            $insert = [];
+            $excelCodes = []; // Cek duplikat dalam Excel
+            $jumlahBarisData = 0;
+    
+            foreach ($data as $baris => $value) {
+                if ($baris > 1) {
+                    $jumlahBarisData++;
+    
+                    $kode = trim($value['A'] ?? '');
+                    $nama = trim($value['B'] ?? '');
+    
+                    // Validasi data tidak kosong dan unik
+                    if (
+                        $kode && $nama &&
+                        !in_array($kode, $existingCodes) &&
+                        !in_array($kode, $excelCodes)
+                    ) {
+                        $insert[] = [
+                            'kategori_kode' => $kode,
+                            'kategori_nama' => $nama,
+                            'created_at' => now(),
+                        ];
+                        $excelCodes[] = $kode;
+                    }
+                }
+            }
+    
+            if (count($insert) > 0) {
+                try {
+                    KategoriModel::insert($insert);
+                    if (count($insert) == $jumlahBarisData) {
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena duplikasi kode atau data tidak lengkap'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang valid untuk diimport (semua data duplikat atau tidak valid)'
+                ]);
+            }
+        }
+    
+        return redirect('/');
+    }
+
+    public function export_excel()
+    {
+        $kategori = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama')
+            ->orderBy('kategori_id')
+            ->orderBy('kategori_kode')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Kode kategori');
+        $sheet->setCellValue('C1', 'Nama kategori');
+
+        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+        $no = 1;
+        $baris = 2;
+
+        foreach ($kategori as $key => $data) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $data->kategori_kode);
+            $sheet->setCellValue('C' . $baris, $data->kategori_nama);
+            $no++;
+            $baris++;
+        }
+
+        foreach (range('A', 'C') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data kategori');
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data kategori_' . date('Y-m-d H:i:s') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $kategori = KategoriModel::select('kategori_id', 'kategori_kode', 'kategori_nama')
+            ->orderBy('kategori_id')
+            ->orderBy('kategori_kode')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $pdf = Pdf::loadView('kategori.export_pdf', ['kategori' => $kategori]);
+        $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+        $pdf->render();
+
+        return $pdf->stream('Data kategori ' . date('Y-m-d H:i:s') . '.pdf');
+    }
+
 }
