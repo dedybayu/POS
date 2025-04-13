@@ -403,6 +403,20 @@ class BarangController extends Controller
             $spreadsheet = $reader->load($filePath);
             $sheet = $spreadsheet->getActiveSheet();
             $data = $sheet->toArray(null, false, true, true);
+
+            
+            // Validasi Header
+            $expectedHeader = ['A' => 'kategori_id', 'B' => 'barang_kode', 'C' => 'barang_nama', 'D' => 'harga_beli', 'E' => 'harga_jual'];
+            $actualHeader = $data[1] ?? [];
+
+            foreach ($expectedHeader as $col => $expected) {
+                if (trim($actualHeader[$col] ?? '') !== $expected) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
     
             // Hapus file upload
             if (Storage::disk('public')->exists($filePathRelative)) {
