@@ -370,11 +370,8 @@ class BarangController extends Controller
 
     public function import_ajax(Request $request)
     {
-        // return "HELLO";
-        // dd($request->file('file_barang')->getRealPath());
         if ($request->ajax() || $request->wantsJson()) {
             $rules = [
-                // validasi file harus xls atau xlsx, max 1MB
                 'file_barang' => ['required', 'mimes:xlsx', 'max:1024']
             ];
             $validator = Validator::make($request->all(), $rules);
@@ -385,94 +382,106 @@ class BarangController extends Controller
                     'msgField' => $validator->errors()
                 ]);
             }
-
-
+    
             $file = $request->file('file_barang');
-
             if (!$file->isValid()) {
                 return response()->json(['error' => 'Invalid file'], 400);
             }
-
-            // Nama file unik
+    
             $filename = time() . '_' . $file->getClientOriginalName();
-
-            // Pastikan folder penyimpanan ada
             $destinationPath = storage_path('app/public/file_barang');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0775, true);
             }
-
+    
             $file->move($destinationPath, $filename);
-
             $filePathRelative = "file_barang/$filename";
-            $filePath = storage_path("app/public/file_barang/$filename"); // Simpan path gambar
-
-            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
-            $reader->setReadDataOnly(true); // hanya membaca data
-            $spreadsheet = $reader->load($filePath); // load file excel
-            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
-            $data = $sheet->toArray(null, false, true, true); // ambil data excel
-            $insert = [];
-
-            // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
+            $filePath = storage_path("app/public/file_barang/$filename");
+    
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($filePath);
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray(null, false, true, true);
+    
+            // Hapus file upload
             if (Storage::disk('public')->exists($filePathRelative)) {
                 Storage::disk('public')->delete($filePathRelative);
             }
-
-            if (count($data) > 1) { // jika data lebih dari 1 baris
-                $existingCodes = BarangModel::pluck('barang_kode')->toArray();
-
-                foreach ($data as $baris => $value) {
-                    if ($baris > 1) { // baris ke-1 adalah header, maka lewati
-                        if (!in_array($value['B'], $existingCodes)) { // Memastikan barang_kode unik
-                            $insert[] = [
-                                'kategori_id' => $value['A'],
-                                'barang_kode' => $value['B'],
-                                'barang_nama' => $value['C'],
-                                'harga_beli' => $value['D'],
-                                'harga_jual' => $value['E'],
-                                'created_at' => now(),
-                            ];
-                        }
-                    }
-                }
-
-                if (count($insert) > 0) {
-                    try {
-                        BarangModel::insert($insert); // Insert data baru yang unik
-                        if (count($insert) == count($data)) {
-                            return response()->json([
-                                'status' => true,
-                                'message' => 'Semua (' . count($insert) . ') Data berhasil diimport'
-                            ]);
-                        } else {
-                            return response()->json([
-                                'status' => true,
-                                'message' => count($insert) . ' Data berhasil diimport, Namun beberapa data Gagal karena duplikasi Kode'
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Terjadi kesalahan "Data Tidak Valid"'
-                        ]);
-                    }
-
-                } else {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Tidak ada data yang diimport karena kode barang sudah ada'
-                    ]);
-                }
-            } else {
+    
+            if (count($data) <= 1) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Tidak ada data yang diimport'
                 ]);
             }
+    
+            $existingCodes = BarangModel::pluck('barang_kode')->toArray();
+            $insert = [];
+            $excelCodes = []; // Cek duplikat dalam Excel
+            $jumlahBarisData = 0;
+    
+            foreach ($data as $baris => $value) {
+                if ($baris > 1) {
+                    $jumlahBarisData++;
+    
+                    $kategori_id = trim($value['A'] ?? '');
+                    $kode = trim($value['B'] ?? '');
+                    $nama = trim($value['C'] ?? '');
+                    $harga_beli = trim($value['D'] ?? '');
+                    $harga_jual = trim($value['E'] ?? '');
+    
+                    // Validasi data tidak kosong dan unik
+                    if (
+                        $kategori_id && $kode && $nama && $harga_beli && $harga_jual &&
+                        !in_array($kode, $existingCodes) &&
+                        !in_array($kode, $excelCodes)
+                    ) {
+                        $insert[] = [
+                            'kategori_id' => $kategori_id,
+                            'barang_kode' => $kode,
+                            'barang_nama' => $nama,
+                            'harga_beli' => $harga_beli,
+                            'harga_jual' => $harga_jual,
+                            'created_at' => now(),
+                        ];
+                        $excelCodes[] = $kode;
+                    }
+                }
+            }
+    
+            if (count($insert) > 0) {
+                try {
+                    BarangModel::insert($insert);
+                    if (count($insert) == $jumlahBarisData) {
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena duplikasi kode atau data tidak lengkap'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang valid untuk diimport (semua data duplikat atau tidak valid)'
+                ]);
+            }
         }
+    
         return redirect('/');
     }
+    
 
     public function export_excel()
     {
