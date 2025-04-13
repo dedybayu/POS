@@ -376,7 +376,21 @@ class KategoriController extends Controller
             $spreadsheet = $reader->load($filePath); // load file excel
             $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
             $data = $sheet->toArray(null, false, true, true); // ambil data excel
-            $insert = [];
+
+
+            // Validasi Header
+            $expectedHeader = ['A' => 'kategori_kode', 'B' => 'kategori_nama'];
+            $actualHeader = $data[1] ?? [];
+
+            foreach ($expectedHeader as $col => $expected) {
+                if (trim($actualHeader[$col] ?? '') !== $expected) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
+            // $insert = [];
 
             // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
             if (Storage::disk('public')->exists($filePathRelative)) {
@@ -387,14 +401,14 @@ class KategoriController extends Controller
             $insert = [];
             $excelCodes = []; // Cek duplikat dalam Excel
             $jumlahBarisData = 0;
-    
+
             foreach ($data as $baris => $value) {
                 if ($baris > 1) {
                     $jumlahBarisData++;
-    
+
                     $kode = trim($value['A'] ?? '');
                     $nama = trim($value['B'] ?? '');
-    
+
                     // Validasi data tidak kosong dan unik
                     if (
                         $kode && $nama &&
@@ -410,7 +424,7 @@ class KategoriController extends Controller
                     }
                 }
             }
-    
+
             if (count($insert) > 0) {
                 try {
                     KategoriModel::insert($insert);
@@ -439,7 +453,7 @@ class KategoriController extends Controller
                 ]);
             }
         }
-    
+
         return redirect('/');
     }
 
