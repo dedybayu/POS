@@ -5,10 +5,16 @@
         <div class="card-header">
             <h3 class="card-title">{{ $page->title }}</h3>
             <div class="card-tools">
+                <button onclick="modalAction('{{ url('/user/import') }}')" class="btn btn-sm btn-info mt-1">Import
+                    User</button>
                 <a class="btn btn-sm btn-primary mt-1" href="{{ url('user/create') }}">Tambah</a>
                 <button onclick="modalAction('{{ url('/user/create_ajax') }}')" class="btn btn-sm btn-success mt-1">
                     Tambah Ajax
                 </button>
+                <a href="{{ url('/user/export_excel') }}" class="btn btn-sm btn-primary mt-1"><i
+                        class="fa fa-file-excel"></i> Export User</a>
+                <a href="{{ url('/user/export_pdf') }}" class="btn btn-sm btn-warning mt-1"><i class="fa fa-file-pdf"></i>
+                    Export User</a>
             </div>
         </div>
         <div class="card-body">
@@ -52,8 +58,8 @@
     </div>
 
     {{-- Modal Container --}}
-    <div id="modal-crud" class="modal fade animate shake" tabindex="-1" role="dialog"
-        data-backdrop="static" data-keyboard="false" aria-hidden="true">
+    <div id="modal-crud" class="modal fade animate shake" tabindex="-1" role="dialog" data-backdrop="static"
+        data-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content"></div>
         </div>
@@ -71,7 +77,7 @@
             $("#modal-crud .modal-content").html("");
 
             // Panggil modal melalui AJAX
-            $.get(url, function(response) {
+            $.get(url, function (response) {
                 $("#modal-crud .modal-content").html(response);
                 $("#modal-crud").modal("show");
             });

@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\LevelModel;
 use App\Models\UserModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Hash;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -331,5 +334,205 @@ class UserController extends Controller
                 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
             );
         }
+    }
+
+
+
+    public function import()
+    {
+        return view('user.import');
+    }
+
+    public function import_ajax(Request $request)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'file_user' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+            $file = $request->file('file_user');
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
+
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $destinationPath = storage_path('app/public/file_user');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $filename);
+            $filePathRelative = "file_user/$filename";
+            $filePath = storage_path("app/public/file_user/$filename");
+
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($filePath);
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray(null, false, true, true);
+
+
+            // Validasi Header
+            $expectedHeader = ['A' => 'level_id', 'B' => 'username', 'C' => 'nama', 'D' => 'password'];
+            $actualHeader = $data[1] ?? [];
+
+            foreach ($expectedHeader as $col => $expected) {
+                if (trim($actualHeader[$col] ?? '') !== $expected) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
+
+            // Hapus file upload
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            if (count($data) <= 1) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang diimport'
+                ]);
+            }
+
+            $insert = [];
+            $jumlahBarisData = 0;
+            $message = '';
+            $haveInvalid = false;
+
+            foreach ($data as $baris => $value) {
+                if ($baris > 1) {
+                    if($value['A'] == null || $value['B'] == null || $value['C'] == null || $value['D'] == null ){
+                        $haveInvalid = true;
+                        continue;
+                    }
+
+                    $jumlahBarisData++;
+
+                    $level_id = trim($value['A'] ?? '');
+                    $username = trim($value['B'] ?? '');
+                    $nama = trim($value['C'] ?? '');
+                    $password = trim($value['D'] ?? '');
+
+                    // Validasi data tidak kosong dan unik
+                    $insert[] = [
+                        'level_id' => $level_id,
+                        'username' => $username,
+                        'nama' => $nama,
+                        'password' => $password,
+                        'created_at' => now(),
+                    ];
+                }
+            }
+
+            if (count($insert) > 0) {
+                try {
+                    UserModel::insert($insert);
+                    if (count($insert) == $jumlahBarisData && $haveInvalid == false) {
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena data tidak lengkap'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang valid untuk diimport'
+                ]);
+            }
+        }
+
+        return redirect('/');
+    }
+
+
+    public function export_excel()
+    {
+        $user = UserModel::select('level_id', 'user_id', 'username', 'nama')
+            ->orderBy('level_id')
+            ->orderBy('nama')
+            ->with('level')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'ID');
+        $sheet->setCellValue('C1', 'Username');
+        $sheet->setCellValue('D1', 'Nama');
+        $sheet->setCellValue('E1', 'level');
+
+        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+        $no = 1;
+        $baris = 2;
+
+        foreach ($user as $key => $data) {
+            $sheet->setCellValue('A' . $baris, $no);
+            $sheet->setCellValue('B' . $baris, $data->user_id);
+            $sheet->setCellValue('C' . $baris, $data->username);
+            $sheet->setCellValue('D' . $baris, $data->nama);
+            $sheet->setCellValue('E' . $baris, $data->level->level_nama);
+            $no++;
+            $baris++;
+        }
+
+        foreach (range('A', 'E') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        $sheet->setTitle('Data user');
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $filename = 'Data user_' . date('Y-m-d H:i:s') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+        header('Cache-Control: cache, must-revalidate');
+        header('Pragma: public');
+
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        $user = UserModel::select('level_id', 'user_id', 'username', 'nama')
+            ->orderBy('level_id')
+            ->with('level')
+            ->get();
+
+        // use Barryvdh\DomPDF\Facade\Pdf;
+        $pdf = Pdf::loadView('user.export_pdf', ['user' => $user]);
+        $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+        $pdf->render();
+
+        return $pdf->stream('Data user ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }
