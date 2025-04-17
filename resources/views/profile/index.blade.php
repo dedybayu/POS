@@ -34,19 +34,19 @@
 
         <div class="mb-3">
             <label for="name" class="form-label">Your Name</label>
-            <input type="text" value="{{ auth()->user()->nama }}" class="form-control" required>
+            <input type="text" value="{{ auth()->user()->nama }}" class="form-control" disabled>
         </div>
         <div class="mb-3">
             <label for="name" class="form-label">Level Pengguna</label>
-            <input type="text" value="{{ auth()->user()->level->level_nama }}" class="form-control" required>
+            <input type="text" value="{{ auth()->user()->level->level_nama }}" class="form-control" disabled>
         </div>
         <div class="mb-3">
             <label for="name" class="form-label">Username</label>
-            <input type="text" value="{{ auth()->user()->username }}" class="form-control" required>
+            <input type="text" value="{{ auth()->user()->username }}" class="form-control" disabled>
         </div>
         <div class="mb-3">
             <label for="name" class="form-label">Password</label>
-            <input type="text" value="*************" class="form-control" required>
+            <input type="text" placeholder="*************" class="form-control" disabled>
         </div>
     </div>
     <div class="modal-footer">

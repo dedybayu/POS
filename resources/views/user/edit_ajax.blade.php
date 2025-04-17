@@ -27,6 +27,25 @@
             </button>
         </div>
         <div class="modal-body">
+            <div class="text-center">
+                <img id="profileImage" class="img-thumbnail rounded-circle mb-3"
+                    style="width: 160px; height: 160px; object-fit: cover;"
+                    src="{{ $user->profile_picture ? asset('storage/' . auth()->user()->profile_picture) : asset('img/user.png') }}"
+                    alt="Profile picture">
+
+                <div class="mt-2">
+                    <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*"
+                        onchange="previewImage(event)">
+                    <button type="button" onclick="document.getElementById('profile_picture').click()"
+                        class="btn btn-primary">
+                        Change Picture
+                    </button>
+                    <button type="button" onclick="removeImage()" class="btn btn-outline-danger">
+                        Delete Picture
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" id="remove_picture" name="remove_picture" value="0">
             <div class="form-group">
                 <label>Level Pengguna</label>
                 <select name="level_id" id="level_id" class="form-control" required>
@@ -41,7 +60,8 @@
             </div>
             <div class="form-group">
                 <label>Username</label>
-                <input value="{{ $user->username }}" type="text" name="username" id="username" class="form-control" required>
+                <input value="{{ $user->username }}" type="text" name="username" id="username" class="form-control"
+                    required>
                 <small id="error-username" class="error-text form-text text-danger"></small>
             </div>
             <div class="form-group">
@@ -63,6 +83,22 @@
     </form>
 
     <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var output = document.getElementById('profileImage');
+                output.src = reader.result;
+            }
+            reader.readAsDataURL(event.target.files[0]);
+            document.getElementById('remove_picture').value = "0";
+        }
+
+        function removeImage() {
+            document.getElementById('profileImage').src = '/../img/user.png';
+            document.getElementById('profile_picture').value = '';
+            document.getElementById('remove_picture').value = "1";
+        }
+
         $(document).ready(function () {
             $("#form-edit").validate({
                 rules: {

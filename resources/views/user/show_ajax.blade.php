@@ -24,6 +24,11 @@
         </button>
     </div>
     <div class="modal-body">
+        <div class="text-center">
+            <img src="{{ asset($user->profile_picture ? 'storage/' . auth()->user()->profile_picture : 'img/user.png') }}"
+                class="rounded-circle border border-2 border-primary shadow bg-white p-1"
+                style="width: 160px; height: 160px; object-fit: cover;" alt="Bordered avatar">
+        </div><br>
         <table class="table table-sm table-bordered table-striped">
             <tr>
                 <th class="text-right col-3">Nama :</th>
