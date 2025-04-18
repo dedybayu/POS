@@ -22,4 +22,9 @@ class BarangModel extends Model
     {
         return $this->hasOne(StokModel::class, 'barang_id', 'barang_id'); 
     }
+
+    public function penjualan_detail()
+    {
+        return $this->hasMany(PenjualanDetailModel::class, 'barang_id', 'barang_id');
+    }
 }
