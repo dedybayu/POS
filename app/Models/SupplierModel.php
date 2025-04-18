@@ -13,4 +13,8 @@ class SupplierModel extends Model
 
     protected $fillable = ['supplier_nama', 'supplier_kode', 'supplier_alamat'];
 
+    public function stok()
+    {
+        return $this->hasMany(StokModel::class, 'supplier_id', 'supplier_id');
+    }
 }
