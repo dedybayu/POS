@@ -26,17 +26,20 @@
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
-            <table class="table table-bordered table-striped table-hover table-sm" id="table_supplier">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama Supplier</th>
-                        <th>Kode</th>
-                        <th>Alamat</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover table-sm" id="table_supplier">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Supplier</th>
+                            <th>Kode</th>
+                            <th>Alamat</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
         </div>
     </div>
 

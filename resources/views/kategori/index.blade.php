@@ -13,7 +13,8 @@
                 </button>
                 <a href="{{ url('/kategori/export_excel') }}" class="btn btn-sm btn-primary mt-1"><i
                         class="fa fa-file-excel"></i> Export Kategori</a>
-                <a href="{{ url('/kategori/export_pdf') }}" class="btn btn-sm btn-warning mt-1"><i class="fa fa-file-pdf"></i>
+                <a href="{{ url('/kategori/export_pdf') }}" class="btn btn-sm btn-warning mt-1"><i
+                        class="fa fa-file-pdf"></i>
                     Export Kategori</a>
             </div>
         </div>
@@ -25,16 +26,19 @@
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
-            <table class="table table-bordered table-striped table-hover table-sm" id="table_kategori">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama Kategori</th>
-                        <th>Kode</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover table-sm" id="table_kategori">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Kategori</th>
+                            <th>Kode</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
         </div>
     </div>
 

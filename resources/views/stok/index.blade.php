@@ -19,7 +19,7 @@
         </div>
 
 
-        
+
 
         <div class="card-body">
             @if (session('success'))
@@ -33,9 +33,9 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="form-group row">
-                        <label class="col-1 control-label col-form-label">Filter:</label>
+                        <label class="col-12 col-md-1 control-label col-form-label">Filter:</label>
 
-                        <div class="col-3">
+                        <div class="col-12 col-md-3 mb-2 mb-md-0">
                             <select class="form-select" id="supplier_id" name="supplier_id" style="width: 100%">
                                 <option value="">- Semua -</option>
                                 @foreach($supplier as $item)
@@ -45,7 +45,7 @@
                             <small class="form-text text-muted">Supplier</small>
                         </div>
 
-                        <div class="col-3">
+                        <div class="col-12 col-md-3 mb-2 mb-md-0">
                             <select class="form-select" id="kategori_id" name="kategori_id" style="width: 100%">
                                 <option value="">- Semua -</option>
                                 @foreach($kategori as $item)
@@ -55,7 +55,7 @@
                             <small class="form-text text-muted">Kategori</small>
                         </div>
 
-                        <div class="col-3">
+                        <div class="col-12 col-md-3">
                             <select class="form-select" id="user_id" name="user_id" style="width: 100%">
                                 <option value="">- Semua -</option>
                                 @foreach($user as $item)
@@ -66,29 +66,26 @@
                         </div>
                     </div>
                 </div>
-
-
-            </div>
-            {{-- Filter --}}
-            <div class="row">
-
             </div>
 
-            <table class="table table-bordered table-striped table-hover table-sm" id="table_stok">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Barang</th>
-                        <th>Kode</th>
-                        <th>Kategori</th>
-                        <th>Stok</th>
-                        <th>Supplier</th>
-                        <th>User</th>
-                        <th>Tanggal</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-            </table>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover table-sm" id="table_stok">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Barang</th>
+                            <th>Kode</th>
+                            <th>Kategori</th>
+                            <th>Stok</th>
+                            <th>Supplier</th>
+                            <th>User</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 

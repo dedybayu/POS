@@ -41,20 +41,21 @@
                     </div>
                 </div>
             </div>
-
-            <table class="table table-bordered table-striped table-hover table-sm" id="table_barang">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nama Barang</th>
-                        <th>Kode Barang</th>
-                        <th>Kategori</th>
-                        <th>Harga Beli</th>
-                        <th>Harga Jual</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover table-sm" id="table_barang">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama Barang</th>
+                            <th>Kode Barang</th>
+                            <th>Kategori</th>
+                            <th>Harga Beli</th>
+                            <th>Harga Jual</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
     {{-- Modal Container --}}
