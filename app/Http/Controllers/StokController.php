@@ -55,7 +55,7 @@ class StokController extends Controller
 
         // Filter berdasarkan supplier
         if ($request->supplier_id) {
-            $stoks->where('supplier_id', $request->supplier_id);
+            $stoks->where('t_stok.supplier_id', $request->supplier_id);
         }
 
         // Filter berdasarkan kategori (harus melalui relasi ke barang)

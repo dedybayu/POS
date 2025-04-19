@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BarangModel;
 use App\Models\PenjualanModel;
 use App\Models\UserModel;
 use Illuminate\Http\Request;
@@ -58,13 +59,13 @@ class PenjualanController extends Controller
                 $totalHarga = $penjualan->penjualan_detail->sum('harga');
                 return 'Rp' . number_format($totalHarga, 0, ',', '.') . ',00';
             })
-            
+
 
             ->addColumn('user', function ($penjualan) {
                 $user = $penjualan->user;
                 return $user->nama . " (" . $user->level->level_kode . ")";
             })
-            
+
             ->addIndexColumn()->addColumn('aksi', function ($penjualan) {
                 $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
                     '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
@@ -81,7 +82,12 @@ class PenjualanController extends Controller
      */
     public function create()
     {
-        //
+        // return 'create_ajax dipanggil'; //Debug
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')->get();
+
+        return view('penjualan.create')->with([
+            'barang' => $barang
+        ]);
     }
 
     /**
@@ -89,8 +95,9 @@ class PenjualanController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        dd($request); // Mengakses array 'barang[]' dari request
     }
+    
 
     /**
      * Display the specified resource.
