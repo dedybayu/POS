@@ -98,7 +98,7 @@
                     }
                 },
                 columns: [
-                    { data: "barang_id", className: "text-center", orderable: true, searchable: false },
+                    { data: "DT_RowIndex", className: "text-center", orderable: false, searchable: false },
                     { data: "barang_nama", className: "", orderable: true, searchable: true },
                     { data: "barang_kode", className: "", orderable: true, searchable: true },
                     { data: "kategori.kategori_nama", className: "", orderable: true, searchable: true },

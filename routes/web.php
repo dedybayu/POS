@@ -189,8 +189,8 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
             // Route::get('/create_ajax', [PenjualanController::class, 'create_ajax']);
             Route::post('/', [PenjualanController::class, 'store']);
             Route::post('/ajax', [PenjualanController::class, 'store_ajax']);
-            Route::get('/{id}', [PenjualanController::class, 'show']);
-            Route::get('/{id}/show_ajax', [PenjualanController::class, 'show_ajax']);
+            Route::get('/{id}/show', [PenjualanController::class, 'show']);
+            // Route::get('/{id}/show_ajax', [PenjualanController::class, 'show_ajax']);
             Route::get('/{id}/edit', [PenjualanController::class, 'edit']);
             Route::put('/{id}', [PenjualanController::class, 'update']);
             Route::get('/{id}/edit_ajax', [PenjualanController::class, 'edit_ajax']);

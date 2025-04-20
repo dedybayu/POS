@@ -5,7 +5,7 @@
         <div class="card-header">
             <h3 class="card-title">{{ $page->title }}</h3>
             <div class="card-tools">
-                <button onclick="modalAction('{{ url('/stok/create_ajax') }}')" class="btn btn-sm btn-success mt-1">
+                <button onclick="modalAction('{{ url('/stok/create') }}')" class="btn btn-sm btn-success mt-1">
                     Tambah Ajax
                 </button>
                 <button onclick="modalAction('{{ url('/stok/import') }}')" class="btn btn-sm btn-info mt-1">Import
@@ -16,9 +16,6 @@
                     Export stok</a>
             </div>
         </div>
-
-
-
 
         <div class="card-body">
             @if (session('success'))

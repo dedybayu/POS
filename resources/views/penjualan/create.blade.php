@@ -52,28 +52,32 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label>Harga Total:</label>
+                        <input type="hidden" class="input-harga" name="harga[]" id="input-harga">
                         <input type="text" class="form-control harga-total" readonly value="Rp0">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Harga -->
-        <div class="col-md-3">
-            <div class="form-group">
-                <label>Total Keseluruhan:</label>
-                <input type="text" class="form-control harga-total-semua" readonly value="Rp0">
+        <div class="row">
+            <!-- Harga -->
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label>Total Keseluruhan:</label>
+                    <input type="text" class="form-control harga-total-semua" readonly value="Rp0">
+                </div>
+            </div>
+            <!-- Tombol Tambah -->
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="button" id="button-tambah" class="btn btn-success btn-block h-100">
+                        <i class="bi bi-plus"></i> Tambah
+                    </button>
+                </div>
             </div>
         </div>
-        <!-- Tombol Tambah -->
-        <div class="col-md-2">
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button type="button" id="button-tambah" class="btn btn-success btn-block h-100">
-                    <i class="bi bi-plus"></i> Tambah
-                </button>
-            </div>
-        </div>
+
     </div>
 
     <!-- Footer -->
@@ -101,7 +105,6 @@
                 currency: 'IDR'
             }).format(angka);
         }
-
         // Tambah baris baru
         $(document).on('click', '#button-tambah', function () {
             const newRow = ` 
@@ -128,6 +131,7 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Harga Total:</label>
+                            <input type="hidden" class="input-harga"  name="harga[]" id="input-harga">
                             <input type="text" class="form-control harga-total" readonly value="Rp0">
                         </div>
                     </div>
@@ -165,6 +169,7 @@
                 const jumlah = parseInt($(this).find('.jumlah-input').val()) || 0;
                 const total = harga * jumlah;
 
+                $(this).find('.input-harga').val(harga);
                 $(this).find('.harga-total').val(formatRupiah(total));
                 totalKeseluruhan += total;
             });

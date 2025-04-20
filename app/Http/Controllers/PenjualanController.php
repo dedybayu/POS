@@ -56,9 +56,12 @@ class PenjualanController extends Controller
             })
 
             ->addColumn('total_harga', function ($penjualan) {
-                $totalHarga = $penjualan->penjualan_detail->sum('harga');
+                $totalHarga = $penjualan->penjualan_detail->sum(function ($detail) {
+                    return $detail->harga * $detail->jumlah;
+                });
                 return 'Rp' . number_format($totalHarga, 0, ',', '.') . ',00';
             })
+            
 
 
             ->addColumn('user', function ($penjualan) {
@@ -68,7 +71,7 @@ class PenjualanController extends Controller
 
             ->addIndexColumn()->addColumn('aksi', function ($penjualan) {
                 $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                    '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
                     '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
@@ -97,15 +100,29 @@ class PenjualanController extends Controller
     {
         dd($request); // Mengakses array 'barang[]' dari request
     }
-    
+
 
     /**
      * Display the specified resource.
      */
-    public function show(PenjualanModel $penjualanModel)
+    public function show(string $id)
     {
-        //
+        $penjualan = PenjualanModel::with('penjualan_detail', 'user.level')->find($id);
+    
+        if (!$penjualan) {
+            abort(404); // atau redirect dengan pesan error
+        }
+    
+        $totalHarga = $penjualan->penjualan_detail->sum('harga');
+        $user = $penjualan->user->mama . ' (' . $penjualan->user->level->level_kode . ')';
+    
+        return view('penjualan.show', [
+            'penjualan' => $penjualan,
+            'total_harga' => $totalHarga,
+            'user' => $user
+        ]);
     }
+    
 
     /**
      * Show the form for editing the specified resource.
