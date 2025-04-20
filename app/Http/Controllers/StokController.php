@@ -78,10 +78,12 @@ class StokController extends Controller
                 return \Carbon\Carbon::parse($stok->stok_tanggal)->format('d-m-Y');
             })
             ->addIndexColumn()->addColumn('aksi', function ($stok) {
-                $btn = '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
-                    '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                $btn = '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id)
+                     . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
-                    '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                    '/edit') . '\')" class="btn btn-success btn-sm">Edit</button> ';
+                $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
+                    '/tambah') . '\')" class="btn btn-warning btn-sm">Tambah</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
                     '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
                 return $btn;
@@ -97,11 +99,11 @@ class StokController extends Controller
     {
         $supplier = SupplierModel::select('supplier_id', 'supplier_nama', 'supplier_kode')->get();
         // Ambil daftar barang_id yang sudah ada di stok
-        $barangSudahAdaStok = StokModel::pluck('barang_id');
+        // $barangSudahAdaStok = StokModel::pluck('barang_id');
 
         // Ambil hanya barang yang belum ada di stok
         $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_beli')
-            ->whereNotIn('barang_id', $barangSudahAdaStok)
+            // ->whereNotIn('barang_id', $barangSudahAdaStok)
             ->get();
 
         return view('stok.create', compact('barang', 'supplier'));
@@ -118,17 +120,45 @@ class StokController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(StokModel $stokModel)
+    public function show(string $id)
     {
-        //
+        $stok = StokModel::with(['supplier', 'barang.kategori', 'user.level'])
+        ->where('stok_id', $id)
+        ->firstOrFail();
+
+        return view('stok.show', compact('stok'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(StokModel $stokModel)
+    public function tambah(string $id)
     {
-        //
+        $stok = StokModel::with(['supplier', 'barang'])
+            ->where('stok_id', $id)
+            ->firstOrFail();
+
+        return view('stok.tambah', compact('stok'));
+    }
+
+    public function update_tambah(Request $request, $id)
+    {
+        dd($id);
+    }
+
+    public function edit(string $id)
+    {
+        $supplier = SupplierModel::select('supplier_id', 'supplier_nama', 'supplier_kode')->get();
+
+        // Ambil hanya barang yang belum ada di stok
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_beli')
+            ->get();
+
+        $stok = StokModel::with(['supplier', 'barang'])
+        ->where('stok_id', $id)
+        ->firstOrFail();
+
+    return view('stok.edit', compact('stok', 'barang', 'supplier'));
     }
 
     /**

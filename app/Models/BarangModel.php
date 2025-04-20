@@ -20,7 +20,7 @@ class BarangModel extends Model
 
     public function stok()
     {
-        return $this->hasOne(StokModel::class, 'barang_id', 'barang_id'); 
+        return $this->hasMany(StokModel::class, 'barang_id', 'barang_id');
     }
 
     public function penjualan_detail()

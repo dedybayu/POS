@@ -75,7 +75,7 @@ class PenjualanController extends Controller
                 $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
                     '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                    '/edit') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
                     '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
                 return $btn;
@@ -87,13 +87,18 @@ class PenjualanController extends Controller
      */
     public function create()
     {
-        // return 'create_ajax dipanggil'; //Debug
-        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')->get();
-
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')
+            ->with('stok') // ambil stok terbaru
+            ->whereHas('stok')
+            ->get();
+    
+        // dd($barang);
         return view('penjualan.create')->with([
             'barang' => $barang
         ]);
+        
     }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -118,7 +123,7 @@ class PenjualanController extends Controller
         $totalHarga = number_format($penjualan->penjualan_detail->map(function ($detail) {
             return $detail->harga * $detail->jumlah;
         })->sum(), 0, ',', '.');
-        
+
         $user = $penjualan->user->mama . ' (' . $penjualan->user->level->level_kode . ')';
     
         return view('penjualan.show', [
@@ -132,17 +137,28 @@ class PenjualanController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PenjualanModel $penjualanModel)
+    public function edit(string $id)
     {
-        //
+        $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
+    
+        if (!$penjualan) {
+            abort(404); // atau redirect dengan pesan error
+        }
+        // dd($id);
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')->get();
+
+        return view('penjualan.edit')->with([
+            'penjualan' => $penjualan,
+            'barang' => $barang
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PenjualanModel $penjualanModel)
+    public function update(Request $request, $id)
     {
-        //
+        dd($id);
     }
 
     /**

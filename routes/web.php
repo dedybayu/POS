@@ -172,6 +172,8 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
             Route::get('/{id}/edit', [StokController::class, 'edit']);
             Route::put('/{id}', [StokController::class, 'update']);
             Route::get('/{id}/edit_ajax', [StokController::class, 'edit_ajax']);
+            Route::get('/{id}/tambah', [StokController::class, 'tambah']);
+            Route::put('/{id}/update_tambah', [StokController::class, 'update_tambah']);
             Route::put('/{id}/update_ajax', [StokController::class, 'update_ajax']);
             Route::get('/{id}/delete_ajax', [StokController::class, 'confirm_ajax']);
             Route::delete('/{id}/delete_ajax', [StokController::class, 'delete_ajax']);
