@@ -7,6 +7,7 @@ use App\Models\KategoriModel;
 use App\Models\StokModel;
 use App\Models\SupplierModel;
 use App\Models\UserModel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Yajra\DataTables\DataTables;
@@ -92,19 +93,19 @@ class StokController extends Controller
      * Show the form for creating a new resource.
      */
 
-     public function create()
-     {
+    public function create()
+    {
         $supplier = SupplierModel::select('supplier_id', 'supplier_nama', 'supplier_kode')->get();
-         // Ambil daftar barang_id yang sudah ada di stok
-         $barangSudahAdaStok = StokModel::pluck('barang_id');
-     
-         // Ambil hanya barang yang belum ada di stok
-         $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_beli')
-                     ->whereNotIn('barang_id', $barangSudahAdaStok)
-                     ->get();
-     
-         return view('stok.create', compact('barang', 'supplier'));
-     }
+        // Ambil daftar barang_id yang sudah ada di stok
+        $barangSudahAdaStok = StokModel::pluck('barang_id');
+
+        // Ambil hanya barang yang belum ada di stok
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_beli')
+            ->whereNotIn('barang_id', $barangSudahAdaStok)
+            ->get();
+
+        return view('stok.create', compact('barang', 'supplier'));
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -279,12 +280,6 @@ class StokController extends Controller
 
     public function export_excel()
     {
-        // $user = UserModel::select('level_id', 'user_id', 'username', 'nama')
-        //     ->orderBy('level_id')
-        //     ->orderBy('nama')
-        //     ->with('level')
-        //     ->get();
-
         $stoks = StokModel::select(
             't_stok.stok_id',
             't_stok.supplier_id',
@@ -292,7 +287,7 @@ class StokController extends Controller
             't_stok.user_id',
             't_stok.stok_tanggal',
             't_stok.stok_jumlah'
-        )->with('supplier', 'barang.kategori', 'user');
+        )->with('supplier', 'barang.kategori', 'user.level')->get();
 
         // use Barryvdh\DomPDF\Facade\Pdf;
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -310,16 +305,23 @@ class StokController extends Controller
         $no = 1;
         $baris = 2;
 
-        foreach ($stoks as $key => $data) {
+        foreach ($stoks as $data) {
             $sheet->setCellValue('A' . $baris, $no);
-            $sheet->setCellValue('B' . $baris, $data->user_id);
-            $sheet->setCellValue('C' . $baris, $data->username);
-            $sheet->setCellValue('D' . $baris, $data->nama);
-            $sheet->setCellValue('E' . $baris, $data->level->level_nama);
+            $sheet->setCellValue('B' . $baris, $data->barang->barang_nama ?? '-'); // Nama barang
+            $sheet->setCellValue('C' . $baris, $data->barang->barang_kode ?? '-'); // Kode barang
+            $sheet->setCellValue('D' . $baris, $data->barang->kategori->kategori_nama ?? '-'); // Kategori
+            $sheet->setCellValue('E' . $baris, $data->stok_jumlah); // Stok
+            $sheet->setCellValue('F' . $baris, $data->supplier->supplier_nama ?? '-'); // Supplier
+            if ($data->user && $data->user->level) {
+                $sheet->setCellValue('G' . $baris, $data->user->nama . ' (' . $data->user->level->level_kode . ')');
+            } else {
+                $sheet->setCellValue('G' . $baris, '-');
+            }
+            $sheet->setCellValue('H' . $baris, \Carbon\Carbon::parse($data->stok_tanggal)->format('d-m-Y')); // Tanggal
+
             $no++;
             $baris++;
         }
-
         foreach (range('A', 'H') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
@@ -343,17 +345,21 @@ class StokController extends Controller
 
     public function export_pdf()
     {
-        $user = UserModel::select('level_id', 'user_id', 'username', 'nama')
-            ->orderBy('level_id')
-            ->with('level')
-            ->get();
+        $stoks = StokModel::select(
+            't_stok.stok_id',
+            't_stok.supplier_id',
+            't_stok.barang_id',
+            't_stok.user_id',
+            't_stok.stok_tanggal',
+            't_stok.stok_jumlah'
+        )->with('supplier', 'barang.kategori', 'user.level')->get();
 
         // use Barryvdh\DomPDF\Facade\Pdf;
-        $pdf = Pdf::loadView('user.export_pdf', ['user' => $user]);
-        $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+        $pdf = Pdf::loadView('stok.export_pdf', ['stok' => $stoks]);
+        $pdf->setPaper('a4', 'landscape'); // set ukuran kertas dan orientasi
         $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
         $pdf->render();
 
-        return $pdf->stream('Data user ' . date('Y-m-d H:i:s') . '.pdf');
+        return $pdf->stream('Data Stok ' . date('Y-m-d H:i:s') . '.pdf');
     }
 }
