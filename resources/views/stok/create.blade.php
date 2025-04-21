@@ -30,7 +30,7 @@
                 <div class="col-md-2">
                     <div class="form-group">
                         <label>Jumlah:</label>
-                        <input type="number" name="jumlah" class="form-control jumlah-input" required min="1">
+                        <input type="number" name="stok_jumlah" class="form-control jumlah-input" required min="1">
                         <small class="error-text form-text text-danger"></small>
                     </div>
                 </div>
@@ -39,7 +39,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label>Harga Total:</label>
-                        <input type="hidden" class="input-harga-total" name="harga" id="input-harga-total">
+                        {{-- <input type="hidden" class="input-harga-total" name="harga" id="input-harga-total"> --}}
                         <input type="text" class="form-control harga-total" readonly value="Rp0">
                     </div>
                 </div>
@@ -91,7 +91,7 @@
                 const jumlah = parseInt($(this).find('.jumlah-input').val()) || 0;
                 const total = harga * jumlah;
 
-                $(this).find('.input-harga-total').val(total);
+                // $(this).find('.input-harga-total').val(total);
                 $(this).find('.harga-total').val(formatRupiah(total));
             });
         });

@@ -34,7 +34,7 @@
                 <div class="col-md-2">
                     <div class="form-group">
                         <label>Jumlah:</label>
-                        <input type="number" name="jumlah" class="form-control jumlah-input" required min="1">
+                        <input type="number" name="stok_jumlah" class="form-control jumlah-input" required min="1">
                         <small class="error-text form-text text-danger"></small>
                     </div>
                 </div>

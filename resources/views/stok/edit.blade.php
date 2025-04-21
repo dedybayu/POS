@@ -1,4 +1,4 @@
-<form action="{{ url('/stok/' . $stok->stok_id . '/update_tambah') }}" method="POST" id="form-tambah">
+<form action="{{ url('/stok/' . $stok->stok_id) }}" method="POST" id="form-tambah">
     @csrf
     @method('PUT')
     <div class="modal-header">
@@ -32,7 +32,7 @@
                 <div class="col-md-2">
                     <div class="form-group">
                         <label>Jumlah:</label>
-                        <input type="number" name="jumlah" class="form-control jumlah-input" value="{{$stok->stok_jumlah}}" required min="1">
+                        <input type="number" name="stok_jumlah" class="form-control jumlah-input" value="{{$stok->stok_jumlah}}" required min="1">
                         <small class="error-text form-text text-danger"></small>
                     </div>
                 </div>

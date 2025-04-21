@@ -9,7 +9,9 @@ use App\Models\SupplierModel;
 use App\Models\UserModel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Validator;
 use Yajra\DataTables\DataTables;
 
 class StokController extends Controller
@@ -79,7 +81,7 @@ class StokController extends Controller
             })
             ->addIndexColumn()->addColumn('aksi', function ($stok) {
                 $btn = '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id)
-                     . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                    . '\')" class="btn btn-info btn-sm">Detail</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
                     '/edit') . '\')" class="btn btn-success btn-sm">Edit</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
@@ -112,10 +114,64 @@ class StokController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(Request $request)
     {
-        dd($request);
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'supplier_id' => 'required',
+                'barang_id' => [
+                    'required',
+                    Rule::unique('t_stok')->where(function ($query) use ($request) {
+                        return $query->where('supplier_id', $request->supplier_id);
+                    }),
+                ],
+                'stok_jumlah' => 'required',
+            ];
+
+            $messages = [
+                'barang_id.unique' => 'Kombinasi Supplier dan Barang sudah ada.',
+            ];
+
+            $validator = Validator::make($request->all(), $rules, $messages);
+
+            if ($validator->fails()) {
+                $errorMessage = 'Validasi Gagal';
+
+                if ($validator->errors()->has('supplier_id')) {
+                    $errorMessage = 'Supplier harus dipilih.';
+                } elseif ($validator->errors()->has('barang_id')) {
+                    if (in_array('Kombinasi Supplier dan Barang sudah ada.', $validator->errors()->get('barang_id'))) {
+                        $errorMessage = 'Kombinasi Supplier dan Barang sudah ada.';
+                    } else {
+                        $errorMessage = 'Barang harus dipilih.';
+                    }
+                } elseif ($validator->errors()->has('stok_jumlah')) {
+                    $errorMessage = 'Jumlah stok wajib diisi.';
+                }
+
+
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage,
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+            $data = $request->all();
+            $data['user_id'] = auth()->user()->user_id; // gunakan user() bukan user_id langsung
+            $data['stok_tanggal'] = now(); // gunakan user() bukan user_id langsung
+
+            StokModel::create($data);
+
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data stok berhasil disimpan'
+            ]);
+        }
     }
+
 
     /**
      * Display the specified resource.
@@ -123,8 +179,8 @@ class StokController extends Controller
     public function show(string $id)
     {
         $stok = StokModel::with(['supplier', 'barang.kategori', 'user.level'])
-        ->where('stok_id', $id)
-        ->firstOrFail();
+            ->where('stok_id', $id)
+            ->firstOrFail();
 
         return view('stok.show', compact('stok'));
     }
@@ -143,7 +199,43 @@ class StokController extends Controller
 
     public function update_tambah(Request $request, $id)
     {
-        dd($id);
+        // dd($id);
+        if ($request->ajax() || $request->wantsJson()) {
+            $stokModel = StokModel::findOrFail($id); // Ambil data berdasarkan ID
+
+            $rules = [
+                'stok_jumlah' => 'required'
+            ];
+
+            $messages = [
+                'stok_jumlah.required' => 'Jumlah stok wajib diisi.',
+            ];
+
+            $validator = Validator::make($request->all(), $rules, $messages);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $validator->errors()->first(),
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+            $data = $request->all();
+            $jumlah = $data['stok_jumlah'];
+            
+            $data['stok_jumlah'] = $stokModel->stok_jumlah + $jumlah;
+            // dd($data['stok_jumlah']);
+            $data['user_id'] = auth()->user()->user_id;
+            $data['stok_tanggal'] = now();
+
+            $stokModel->update($data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data stok berhasil ditambah',
+            ]);
+        }
     }
 
     public function edit(string $id)
@@ -155,19 +247,63 @@ class StokController extends Controller
             ->get();
 
         $stok = StokModel::with(['supplier', 'barang'])
-        ->where('stok_id', $id)
-        ->firstOrFail();
+            ->where('stok_id', $id)
+            ->firstOrFail();
 
-    return view('stok.edit', compact('stok', 'barang', 'supplier'));
+        return view('stok.edit', compact('stok', 'barang', 'supplier'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, StokModel $stokModel)
+    public function update(Request $request, $id)
     {
-        //
+        if ($request->ajax() || $request->wantsJson()) {
+            $stokModel = StokModel::findOrFail($id); // Ambil data berdasarkan ID
+
+            $rules = [
+                'supplier_id' => 'required',
+                'barang_id' => [
+                    'required',
+                    Rule::unique('t_stok')
+                        ->where(function ($query) use ($request) {
+                            return $query->where('supplier_id', $request->supplier_id);
+                        })
+                        ->ignore($id, 'stok_id') , // Abaikan data yang sedang diupdate
+                ],
+                'stok_jumlah' => 'required',
+            ];
+
+            $messages = [
+                'supplier_id.required' => 'Supplier harus dipilih.',
+                'barang_id.required' => 'Barang harus dipilih.',
+                'barang_id.unique' => 'Kombinasi Supplier dan Barang sudah ada.',
+                'stok_jumlah.required' => 'Jumlah stok wajib diisi.',
+            ];
+
+            $validator = Validator::make($request->all(), $rules, $messages);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $validator->errors()->first(),
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+            $data = $request->all();
+            $data['user_id'] = auth()->user()->user_id;
+            $data['stok_tanggal'] = now();
+
+            $stokModel->update($data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data stok berhasil diperbarui',
+            ]);
+        }
     }
+
 
     /**
      * Remove the specified resource from storage.
