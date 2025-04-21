@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -87,7 +88,7 @@ class StokController extends Controller
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
                     '/tambah') . '\')" class="btn btn-warning btn-sm">Tambah</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
-                    '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                    '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
                 return $btn;
             })->rawColumns(['aksi'])
             ->make(true);
@@ -223,7 +224,7 @@ class StokController extends Controller
 
             $data = $request->all();
             $jumlah = $data['stok_jumlah'];
-            
+
             $data['stok_jumlah'] = $stokModel->stok_jumlah + $jumlah;
             // dd($data['stok_jumlah']);
             $data['user_id'] = auth()->user()->user_id;
@@ -269,7 +270,7 @@ class StokController extends Controller
                         ->where(function ($query) use ($request) {
                             return $query->where('supplier_id', $request->supplier_id);
                         })
-                        ->ignore($id, 'stok_id') , // Abaikan data yang sedang diupdate
+                        ->ignore($id, 'stok_id'), // Abaikan data yang sedang diupdate
                 ],
                 'stok_jumlah' => 'required',
             ];
@@ -305,142 +306,188 @@ class StokController extends Controller
     }
 
 
+    public function confirm_delete(string $id)
+    {
+        $stok = StokModel::with(['supplier', 'barang.kategori', 'user.level'])
+            ->where('stok_id', $id)
+            ->firstOrFail();
+
+        return view('stok.confirm_delete', compact('stok'));
+    }
+
+
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(StokModel $stokModel)
+    public function destroy(Request $request, $id)
     {
-        //
+        // cek apakah request dari ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            $stok = StokModel::find($id);
+            if ($stok) {
+                try {
+                    $stok->delete();
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data berhasil dihapus'
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data user gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+        }
+        return redirect('/');
     }
 
 
     public function import()
     {
-        return view('user.import');
+        return view('stok.import');
     }
 
-    public function import_ajax(Request $request)
+    public function import_excel(Request $request)
     {
-        // if ($request->ajax() || $request->wantsJson()) {
-        //     $rules = [
-        //         'file_user' => ['required', 'mimes:xlsx', 'max:1024']
-        //     ];
-        //     $validator = Validator::make($request->all(), $rules);
-        //     if ($validator->fails()) {
-        //         return response()->json([
-        //             'status' => false,
-        //             'message' => 'Validasi Gagal',
-        //             'msgField' => $validator->errors()
-        //         ]);
-        //     }
-
-        //     $file = $request->file('file_user');
-        //     if (!$file->isValid()) {
-        //         return response()->json(['error' => 'Invalid file'], 400);
-        //     }
-
-        //     $filename = time() . '_' . $file->getClientOriginalName();
-        //     $destinationPath = storage_path('app/public/file_user');
-        //     if (!file_exists($destinationPath)) {
-        //         mkdir($destinationPath, 0775, true);
-        //     }
-
-        //     $file->move($destinationPath, $filename);
-        //     $filePathRelative = "file_user/$filename";
-        //     $filePath = storage_path("app/public/file_user/$filename");
-
-        //     $reader = IOFactory::createReader('Xlsx');
-        //     $reader->setReadDataOnly(true);
-        //     $spreadsheet = $reader->load($filePath);
-        //     $sheet = $spreadsheet->getActiveSheet();
-        //     $data = $sheet->toArray(null, false, true, true);
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                // validasi file harus xls atau xlsx, max 1MB
+                'file_stok' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
 
 
-        //     // Validasi Header
-        //     $expectedHeader = ['A' => 'level_id', 'B' => 'username', 'C' => 'nama', 'D' => 'password'];
-        //     $actualHeader = $data[1] ?? [];
+            $file = $request->file('file_stok');
 
-        //     foreach ($expectedHeader as $col => $expected) {
-        //         if (trim($actualHeader[$col] ?? '') !== $expected) {
-        //             return response()->json([
-        //                 'status' => false,
-        //                 'message' => "Header kolom $col tidak valid. Harus '$expected'."
-        //             ]);
-        //         }
-        //     }
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
 
-        //     // Hapus file upload
-        //     if (Storage::disk('public')->exists($filePathRelative)) {
-        //         Storage::disk('public')->delete($filePathRelative);
-        //     }
+            // Nama file unik
+            $filename = time() . '_' . $file->getClientOriginalName();
 
-        //     if (count($data) <= 1) {
-        //         return response()->json([
-        //             'status' => false,
-        //             'message' => 'Tidak ada data yang diimport'
-        //         ]);
-        //     }
+            // Pastikan folder penyimpanan ada
+            $destinationPath = storage_path('app/public/file_stok');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
 
-        //     $insert = [];
-        //     $jumlahBarisData = 0;
-        //     $message = '';
-        //     $haveInvalid = false;
+            $file->move($destinationPath, $filename);
 
-        //     foreach ($data as $baris => $value) {
-        //         if ($baris > 1) {
-        //             if($value['A'] == null || $value['B'] == null || $value['C'] == null || $value['D'] == null ){
-        //                 $haveInvalid = true;
-        //                 continue;
-        //             }
+            $filePathRelative = "file_stok/$filename";
+            $filePath = storage_path("app/public/file_stok/$filename"); // Simpan path gambar
 
-        //             $jumlahBarisData++;
+            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
+            $reader->setReadDataOnly(true); // hanya membaca data
+            $spreadsheet = $reader->load($filePath); // load file excel
+            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
+            $data = $sheet->toArray(null, false, true, true); // ambil data excel
 
-        //             $level_id = trim($value['A'] ?? '');
-        //             $username = trim($value['B'] ?? '');
-        //             $nama = trim($value['C'] ?? '');
-        //             $password = trim($value['D'] ?? '');
 
-        //             // Validasi data tidak kosong dan unik
-        //             $insert[] = [
-        //                 'level_id' => $level_id,
-        //                 'username' => $username,
-        //                 'nama' => $nama,
-        //                 'password' => $password,
-        //                 'created_at' => now(),
-        //             ];
-        //         }
-        //     }
+            // Validasi Header
+            $expectedHeader = ['A' => 'supplier_id', 'B' => 'barang_id', 'C' => 'stok_jumlah'];
+            $actualHeader = $data[1] ?? [];
 
-        //     if (count($insert) > 0) {
-        //         try {
-        //             UserModel::insert($insert);
-        //             if (count($insert) == $jumlahBarisData && $haveInvalid == false) {
-        //                 return response()->json([
-        //                     'status' => true,
-        //                     'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
-        //                 ]);
-        //             } else {
-        //                 return response()->json([
-        //                     'status' => true,
-        //                     'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena data tidak lengkap'
-        //                 ]);
-        //             }
-        //         } catch (\Exception $e) {
-        //             return response()->json([
-        //                 'status' => false,
-        //                 'message' => 'Terjadi kesalahan "Data Tidak Valid"',
-        //                 'error' => $e->getMessage()
-        //             ]);
-        //         }
-        //     } else {
-        //         return response()->json([
-        //             'status' => false,
-        //             'message' => 'Tidak ada data yang valid untuk diimport'
-        //         ]);
-        //     }
-        // }
+            foreach ($expectedHeader as $col => $expected) {
+                if (trim($actualHeader[$col] ?? '') !== $expected) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
+            // $insert = [];
 
-        // return redirect('/');
+            // Hapus Kembali File Upload dengan Storage::disk('public')->delete()
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            $insert = [];
+            $jumlahBarisData = 0;
+            $seenCombinations = [];
+
+            foreach ($data as $baris => $value) {
+                if ($baris > 1) {
+                    $jumlahBarisData++;
+
+                    $supplier_id = trim($value['A'] ?? '');
+                    $barang_id = trim($value['B'] ?? '');
+                    $stok_jumlah = trim($value['C'] ?? '');
+
+                    $combinationKey = $supplier_id . '-' . $barang_id;
+
+                    if (
+                        $supplier_id && $barang_id && $stok_jumlah &&
+                        !in_array($combinationKey, $seenCombinations)
+                    ) {
+                        // Cek di database apakah kombinasi ini sudah ada
+                        $exists = StokModel::where('supplier_id', $supplier_id)
+                            ->where('barang_id', $barang_id)
+                            ->exists();
+
+
+                        if (!$exists) {
+                            $insert[] = [
+                                'supplier_id' => $supplier_id,
+                                'barang_id' => $barang_id,
+                                'stok_jumlah' => $stok_jumlah,
+                                'user_id' => auth()->user()->user_id,
+                                'stok_tanggal' => now(),
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+
+                            $seenCombinations[] = $combinationKey;
+                        }
+                    }
+                }
+            }
+
+
+            if (count($insert) > 0) {
+                try {
+                    StokModel::insert($insert);
+                    if (count($insert) == $jumlahBarisData) {
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Semua (' . count($insert) . ') data berhasil diimport'
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => true,
+                            'message' => count($insert) . ' data berhasil diimport, namun beberapa data gagal karena duplikasi kombinasi barang dan supplier atau data tidak lengkap'
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data yang valid untuk diimport (semua kombinasi barang dan supplier duplikat atau tidak valid)'
+                ]);
+            }
+        }
+
+        return redirect('/');
     }
 
 
@@ -453,7 +500,7 @@ class StokController extends Controller
             't_stok.user_id',
             't_stok.stok_tanggal',
             't_stok.stok_jumlah'
-        )->with('supplier', 'barang.kategori', 'user.level')->get();
+        )->with('supplier', 'barang.stok', 'user.level')->get();
 
         // use Barryvdh\DomPDF\Facade\Pdf;
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -461,7 +508,7 @@ class StokController extends Controller
         $sheet->setCellValue('A1', 'No');
         $sheet->setCellValue('B1', 'Barang');
         $sheet->setCellValue('C1', 'Kode');
-        $sheet->setCellValue('D1', 'Kategori');
+        $sheet->setCellValue('D1', 'stok');
         $sheet->setCellValue('E1', 'Stok');
         $sheet->setCellValue('F1', 'Supplier');
         $sheet->setCellValue('G1', 'User');
@@ -475,7 +522,7 @@ class StokController extends Controller
             $sheet->setCellValue('A' . $baris, $no);
             $sheet->setCellValue('B' . $baris, $data->barang->barang_nama ?? '-'); // Nama barang
             $sheet->setCellValue('C' . $baris, $data->barang->barang_kode ?? '-'); // Kode barang
-            $sheet->setCellValue('D' . $baris, $data->barang->kategori->kategori_nama ?? '-'); // Kategori
+            $sheet->setCellValue('D' . $baris, $data->barang->stok->stok_nama ?? '-'); // stok
             $sheet->setCellValue('E' . $baris, $data->stok_jumlah); // Stok
             $sheet->setCellValue('F' . $baris, $data->supplier->supplier_nama ?? '-'); // Supplier
             if ($data->user && $data->user->level) {
@@ -518,7 +565,7 @@ class StokController extends Controller
             't_stok.user_id',
             't_stok.stok_tanggal',
             't_stok.stok_jumlah'
-        )->with('supplier', 'barang.kategori', 'user.level')->get();
+        )->with('supplier', 'barang.stok', 'user.level')->get();
 
         // use Barryvdh\DomPDF\Facade\Pdf;
         $pdf = Pdf::loadView('stok.export_pdf', ['stok' => $stoks]);
@@ -534,15 +581,15 @@ class StokController extends Controller
         while ($jumlah > 0) {
             // Ambil stok pertama yang masih punya stok
             $stok = StokModel::where('barang_id', $barang_id)
-                    ->where('stok_jumlah', '>', 0)
-                    ->orderBy('stok_tanggal', 'asc') // FIFO
-                    ->first();
-    
+                ->where('stok_jumlah', '>', 0)
+                ->orderBy('stok_tanggal', 'asc') // FIFO
+                ->first();
+
             // Jika tidak ada stok tersisa, hentikan
-            if (!$stok) {            
+            if (!$stok) {
                 return false;
             }
-    
+
             if ($stok->stok_jumlah >= $jumlah) {
                 // cukup di stok ini
                 $stok->stok_jumlah -= $jumlah;
@@ -555,7 +602,7 @@ class StokController extends Controller
                 $stok->save();
             }
         }
-    
+
         return true;
     }
 
@@ -564,7 +611,7 @@ class StokController extends Controller
         if ($jumlah === 0) {
             return true;
         }
-    
+
         // KURANGI STOK (jumlah positif)
         if ($jumlah > 0) {
             while ($jumlah > 0) {
@@ -572,11 +619,11 @@ class StokController extends Controller
                     ->where('stok_jumlah', '>', 0)
                     ->orderBy('stok_tanggal', 'asc') // FIFO
                     ->first();
-    
+
                 if (!$stok) {
                     return false; // Tidak ada stok tersisa
                 }
-    
+
                 if ($stok->stok_jumlah >= $jumlah) {
                     $stok->stok_jumlah -= $jumlah;
                     $stok->save();
@@ -593,9 +640,9 @@ class StokController extends Controller
             $jumlah = abs($jumlah);
             // Tambahkan ke stok terakhir
             $stok = StokModel::where('barang_id', $barang_id)
-                    ->orderBy('stok_tanggal', 'desc') // LIFO
-                    ->first();
-    
+                ->orderBy('stok_tanggal', 'desc') // LIFO
+                ->first();
+
             if ($stok) {
                 $stok->stok_jumlah += $jumlah;
                 $stok->save();
@@ -609,9 +656,9 @@ class StokController extends Controller
                 ]);
             }
         }
-    
+
         return true;
     }
-    
-    
+
+
 }

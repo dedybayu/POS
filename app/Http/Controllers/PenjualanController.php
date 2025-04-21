@@ -80,7 +80,7 @@ class PenjualanController extends Controller
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
                     '/edit') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
                 $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                    '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
                 return $btn;
             })->rawColumns(['aksi'])
             ->make(true);
@@ -423,12 +423,58 @@ class PenjualanController extends Controller
         return redirect('/');
     }
 
+
+    public function confirm_delete(string $id)
+    {
+        $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
+
+        if (!$penjualan) {
+            abort(404); // atau redirect dengan pesan error
+        }
+
+        $totalHarga = number_format($penjualan->penjualan_detail->map(function ($detail) {
+            return $detail->harga * $detail->jumlah;
+        })->sum(), 0, ',', '.');
+
+        $user = $penjualan->user->mama . ' (' . $penjualan->user->level->level_kode . ')';
+
+        return view('penjualan.confirm_delete', [
+            'penjualan' => $penjualan,
+            'total_harga' => $totalHarga,
+            'user' => $user
+        ]);
+    }
+
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PenjualanModel $penjualanModel)
+    public function destroy(Request $request, $id)
     {
-        //
+        // cek apakah request dari ajax
+        if ($request->ajax() || $request->wantsJson()) {
+            $penjualan = PenjualanModel::find($id);
+            if ($penjualan) {
+                try {
+                    PenjualanDetailModel::where('penjualan_id', $id)->delete();
+                    $penjualan->delete();
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Data berhasil dihapus'
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data Penjualan gagal dihapus karena masih terdapat tabel lain yang terkait dengan data ini'
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data tidak ditemukan'
+                ]);
+            }
+        }
+        return redirect('/');
     }
 
 
