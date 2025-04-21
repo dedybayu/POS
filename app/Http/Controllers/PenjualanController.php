@@ -114,6 +114,8 @@ class PenjualanController extends Controller
                 'penjualan_kode' => 'required|string|max:5|unique:t_penjualan,penjualan_kode',
                 'barang_id' => 'required|array',
                 'barang_id.*' => 'required|integer|exists:m_barang,barang_id',
+                'jumlah' => 'required|array',
+                'jumlah.*' => 'required|integer',
             ];
 
 
@@ -195,7 +197,7 @@ class PenjualanController extends Controller
 
             return response()->json([
                 // 'status' => true,
-                'status' => false,
+                'status' => true,
                 'message' => 'Data penjualan berhasil disimpan'
             ]);
         }
@@ -252,7 +254,173 @@ class PenjualanController extends Controller
      */
     public function update(Request $request, $id)
     {
-        dd($id);
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'pembeli' => 'required|string|max:100',
+                'penjualan_kode' => 'required|string|max:5|unique:t_penjualan,penjualan_kode,' . $id . ',penjualan_id',
+                'barang_id_awal' => 'array',
+                'barang_id_awal.*' => 'integer|exists:m_barang,barang_id',
+                'barang_id_baru' => 'array',
+                'barang_id_baru.*' => 'integer|exists:m_barang,barang_id',
+                'jumlah' => 'array',
+                'jumlah.*' => 'integer',
+                'harga' => 'array',
+                'harga.*' => 'integer',
+                'barang_id_new' => 'array',
+                'barang_id_new.*' => 'integer|exists:m_barang,barang_id',
+                'jumlah_new' => 'array',
+                'jumlah_new.*' => 'integer',
+                'harga_new' => 'array',
+                'harga_new.*' => 'integer',
+                'status' => 'array',
+                'status.*' => 'integer',
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                $errorMessage = 'Validasi Gagal';
+                if ($validator->errors()->has('penjualan_kode')) {
+                    $errorMessage = 'Validasi Gagal (Kode Sudah Digunakan)';
+                }
+
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage,
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+
+            $dataPenjualan['pembeli'] = $request['pembeli'];
+            $dataPenjualan['penjualan_kode'] = $request['penjualan_kode'];
+            $dataPenjualan['user_id'] = auth()->user()->user_id;
+            $dataPenjualan['penjualan_tanggal'] = now();
+            // $dataPenjualan['created_at'] = now();
+            $dataPenjualan['updated_at'] = now();
+
+            // dd($dataPenjualan['pembeli']);
+            try {
+                $penjualan = PenjualanModel::findOrFail($id);
+
+                $penjualan->update($dataPenjualan);
+
+            } catch (\Throwable $th) {
+                return response()->json([
+                    // 'status' => true,
+                    'status' => false,
+                    'message' => 'Update Gagal Disimpan'
+                ]);
+            }
+
+            if (isset($request['barang_id_awal']) && is_array($request['barang_id_awal']) && count($request['barang_id_awal']) > 0) {
+                $jumlahEditBarang = count($request->barang_id_baru);
+                for ($i = 0; $i < $jumlahEditBarang; $i++) {
+                    $idDetail = $request['detail_id'][$i];
+                    $detailModel = PenjualanDetailModel::findOrFail($idDetail);
+
+                    $dataDetail['penjualan_id'] = $id;
+                    $dataDetail['barang_id'] = $request['barang_id_baru'][$i];
+                    $dataDetail['harga'] = $request['harga'][$i];
+                    $dataDetail['jumlah'] = $request['jumlah'][$i];
+                    $dataDetail['created_at'] = now();
+                    $dataDetail['updated_at'] = now();
+
+                    $status = StokController::update_stok_edit($request['status'][$i], $dataDetail['barang_id']);
+
+                    if ($status == false) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Stok Barang Tidak Cukup'
+                        ]);
+                    }
+                    // PenjualanDetailModel::create($dataDetail);
+
+                    try {
+                        $detailModel->update($dataDetail);
+                    } catch (\Throwable $th) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Gagal Disimpan'
+                        ]);
+                    }
+                }
+            }
+
+
+
+            if (isset($request['barang_id_new']) && is_array($request['barang_id_new']) && count($request['barang_id_new']) > 0) {
+                $jumlahBarangBaru = count($request->barang_id_new);
+
+                for ($i = 0; $i < $jumlahBarangBaru; $i++) {
+                    $dataDetail['penjualan_id'] = $id;
+                    $dataDetail['barang_id'] = $request['barang_id_new'][$i];
+                    $dataDetail['harga'] = $request['harga_new'][$i];
+                    $dataDetail['jumlah'] = $request['jumlah_new'][$i];
+                    $dataDetail['created_at'] = now();
+                    $dataDetail['updated_at'] = now();
+
+                    $status = StokController::update_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
+
+                    if ($status == false) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Stok Barang Tidak Cukup'
+                        ]);
+                    }
+                    // PenjualanDetailModel::create($dataDetail);
+
+                    try {
+                        PenjualanDetailModel::create($dataDetail);
+                    } catch (\Throwable $th) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Gagal Disimpan'
+                        ]);
+                    }
+                }
+            }
+
+
+            if (isset($request['detail_id_dihapus']) && is_array($request['detail_id_dihapus']) && count($request['detail_id_dihapus']) > 0) {
+                $jumlahHapusBarang = count($request->detail_id_dihapus);
+                for ($i = 0; $i < $jumlahHapusBarang; $i++) {
+
+                    $status = StokController::update_stok_edit(-$request['jumlah_dihapus'][$i], $request['barang_id_dihapus'][$i]);
+
+                    if ($status == false) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Stok Barang Tidak Cukup'
+                        ]);
+                    }
+                    PenjualanDetailModel::whereIn('detail_id', $request['detail_id_dihapus'])->delete();
+
+                    try {
+                        $detailModel->update($dataDetail);
+                    } catch (\Throwable $th) {
+                        return response()->json([
+                            // 'status' => true,
+                            'status' => false,
+                            'message' => 'Gagal Disimpan'
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json([
+                // 'status' => true,
+                'status' => true,
+                'message' => 'Data penjualan berhasil disimpan'
+            ]);
+        }
+
+        return redirect('/');
     }
 
     /**

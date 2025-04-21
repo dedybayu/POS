@@ -13,8 +13,8 @@
     <div class="modal-body overflow-auto" style="max-height: 70vh;">
         <div class="form-group">
             <label>Nama Pembeli</label>
-            <input type="text" name="nama_pembeli" id="nama_pembeli" class="form-control"
-                value="{{$penjualan->pembeli}}" required>
+            <input type="text" name="pembeli" id="nama_pembeli" class="form-control" value="{{$penjualan->pembeli}}"
+                required>
             <small id="error-pembeli" class="error-text form-text text-danger"></small>
         </div>
         <div class="form-group">
@@ -29,6 +29,7 @@
             @foreach($penjualan->penjualan_detail as $detail)
                 <div class="row item-row">
                     <!-- Barang -->
+                    <input type="hidden" class="detail-id" name="detail_id[]" value="{{ $detail->detail_id }}">
                     <input type="hidden" class="barang-id" name="barang_id_awal[]" value="{{ $detail->barang_id }}">
 
                     <div class="col-md-5">
@@ -71,7 +72,7 @@
 
 
 
-                    <input type="hidden" class="status" name="status" id="status">
+                    <input type="hidden" class="status" name="status[]" id="status">
 
                     <!-- Harga -->
                     <div class="col-md-3">
@@ -81,7 +82,7 @@
                             <input type="text" class="form-control harga-total" readonly value="Rp0">
                         </div>
                     </div>
-                    
+
                     <div class="col-md-1">
                         <div class="form-group">
                             <label>&nbsp;</label>
@@ -174,7 +175,7 @@
 
         // Tambah baris baru
         $(document).on('click', '#button-tambah', function () {
-            const newRow = ` 
+            let newRow = ` 
                 <div class="row item-row mt-2">
                     <div class="col-md-5">
                         <div class="form-group">
@@ -227,13 +228,12 @@
         });
 
         // Hapus baris
+        // Hapus baris baru (yang ditambahkan secara dinamis)
         $('#form-container').on('click', '.btn-remove', function () {
-            $('.item-row')(function () { });
             $(this).closest('.item-row').remove();
-
-            // Hitung ulang total keseluruhan setelah hapus
-            updateKomponen()
+            updateKomponen(); // Hitung ulang total keseluruhan setelah hapus
         });
+
 
         // Hapus baris
         $('#form-container').on('click', '.btn-remove-datalama', function () {
@@ -243,10 +243,12 @@
             const jumlahAwal = removedRow.find('.jumlah-input');
             const dataJumlahAwal = parseInt(jumlahAwal.data('jumlahawal')) || 0;
             const barangId = removedRow.find('.barang-id').val();
+            const detailId = removedRow.find('.detail-id').val();
 
             const inputHidden = `
                 <input type="hidden" name="barang_id_dihapus[]" value="${barangId}">
                 <input type="hidden" name="jumlah_dihapus[]" value="${dataJumlahAwal}">
+                <input type="hidden" name="detail_id_dihapus[]" value="${detailId}">
             `;
             $('#form-container').append(inputHidden);
 
@@ -273,7 +275,7 @@
                 const jumlah = parseInt($(this).find('.jumlah-input').val()) || 0;
                 const total = harga * jumlah;
 
-                console.log(barangBaru);
+                // console.log(barangBaru);
                 let selisih;
 
                 let maxJumlah = 0;

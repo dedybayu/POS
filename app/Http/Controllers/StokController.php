@@ -558,5 +558,60 @@ class StokController extends Controller
     
         return true;
     }
+
+    public static function update_stok_edit(int $jumlah, $barang_id)
+    {
+        if ($jumlah === 0) {
+            return true;
+        }
+    
+        // KURANGI STOK (jumlah positif)
+        if ($jumlah > 0) {
+            while ($jumlah > 0) {
+                $stok = StokModel::where('barang_id', $barang_id)
+                    ->where('stok_jumlah', '>', 0)
+                    ->orderBy('stok_tanggal', 'asc') // FIFO
+                    ->first();
+    
+                if (!$stok) {
+                    return false; // Tidak ada stok tersisa
+                }
+    
+                if ($stok->stok_jumlah >= $jumlah) {
+                    $stok->stok_jumlah -= $jumlah;
+                    $stok->save();
+                    $jumlah = 0;
+                } else {
+                    $jumlah -= $stok->stok_jumlah;
+                    $stok->stok_jumlah = 0;
+                    $stok->save();
+                }
+            }
+        }
+        // TAMBAH STOK (jumlah negatif)
+        else {
+            $jumlah = abs($jumlah);
+            // Tambahkan ke stok terakhir
+            $stok = StokModel::where('barang_id', $barang_id)
+                    ->orderBy('stok_tanggal', 'desc') // LIFO
+                    ->first();
+    
+            if ($stok) {
+                $stok->stok_jumlah += $jumlah;
+                $stok->save();
+            } else {
+                // Jika tidak ada stok, bisa buat baru jika diperlukan
+                // Misalnya:
+                StokModel::create([
+                    'barang_id' => $barang_id,
+                    'stok_jumlah' => $jumlah,
+                    'stok_tanggal' => now()
+                ]);
+            }
+        }
+    
+        return true;
+    }
+    
     
 }

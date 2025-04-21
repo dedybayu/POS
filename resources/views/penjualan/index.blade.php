@@ -12,7 +12,8 @@
                     penjualan</button>
                 <a href="{{ url('/penjualan/export_excel') }}" class="btn btn-sm btn-primary mt-1"><i
                         class="fa fa-file-excel"></i> Export penjualan</a>
-                <a href="{{ url('/penjualan/export_pdf') }}" class="btn btn-sm btn-warning mt-1"><i class="fa fa-file-pdf"></i>
+                <a href="{{ url('/penjualan/export_pdf') }}" class="btn btn-sm btn-warning mt-1"><i
+                        class="fa fa-file-pdf"></i>
                     Export penjualan</a>
             </div>
         </div>
@@ -76,56 +77,62 @@
 @endsection
 
 @push('css')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-<!-- Custom CSS for Select2 placeholder centering -->
-<style>
-    /* Styling untuk placeholder Select2 */
-    .select2-container .select2-selection--single {
-        height: calc(2.25rem + 2px);
-        /* Sesuaikan dengan tinggi form input Bootstrap 4 */
-        line-height: calc(2.25rem);
-        /* Menjaga teks tetap di tengah */
-    }
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Custom CSS for Select2 placeholder centering -->
+    <style>
+        /* Styling untuk placeholder Select2 */
+        .select2-container .select2-selection--single {
+            height: calc(2.25rem + 2px);
+            /* Sesuaikan dengan tinggi form input Bootstrap 4 */
+            line-height: calc(2.25rem);
+            /* Menjaga teks tetap di tengah */
+        }
 
-    .select2-selection__rendered {
-        line-height: calc(2.25rem);
-        /* Menjaga placeholder tetap di tengah */
-        padding-left: 10px;
-        /* Sesuaikan padding sesuai kebutuhan */
-    }
+        .select2-selection__rendered {
+            line-height: calc(2.25rem);
+            /* Menjaga placeholder tetap di tengah */
+            padding-left: 10px;
+            /* Sesuaikan padding sesuai kebutuhan */
+        }
 
-    /* Optional: menyesuaikan ukuran input untuk padding lebih baik */
-    .select2-container .select2-selection--single {
-        padding-right: 20px;
-        /* Memberikan ruang untuk ikon clear (X) */
-    }
+        /* Optional: menyesuaikan ukuran input untuk padding lebih baik */
+        .select2-container .select2-selection--single {
+            padding-right: 20px;
+            /* Memberikan ruang untuk ikon clear (X) */
+        }
 
-    .select2-selection__clear {
-        padding: 0 10px;
-        /* Menyesuaikan ukuran clear button */
-    }
-</style>
+        .select2-selection__clear {
+            padding: 0 10px;
+            /* Menyesuaikan ukuran clear button */
+        }
+    </style>
 @endpush
 
 @push('js')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 
     <script>
+        // let newRow = '';
+
         function modalAction(url) {
-            // Kosongkan modal sebelum memuat konten baru
+            // newRow = ''; // Kosongkan dulu sebelum muat konten baru
+
+            // Kosongkan isi modal sebelum load konten baru
             $("#modal-crud .modal-content").html("");
 
-            // Panggil modal melalui AJAX
+            // Panggil modal via AJAX
             $.get(url, function (response) {
                 $("#modal-crud .modal-content").html(response);
                 $("#modal-crud").modal("show");
             });
         }
 
-        // Bersihkan isi modal setelah ditutup
+        // Bersihkan isi modal saat ditutup
         $('#modal-crud').on('hidden.bs.modal', function () {
             $("#modal-crud .modal-content").html("");
+            // newRow = ''; // Reset lagi saat modal ditutup (opsional tambahan keamanan)
         });
+
 
         var dataPenjualan;
         $(document).ready(function () {
@@ -148,8 +155,8 @@
                 columns: [
                     { data: "DT_RowIndex", className: "text-center", orderable: false, searchable: false },
                     { data: "penjualan_kode", orderable: true, searchable: true },
-                    { data: "pembeli", orderable: true, searchable: true }, 
-                    { data: "total_harga", orderable: true, searchable: true }, 
+                    { data: "pembeli", orderable: true, searchable: true },
+                    { data: "total_harga", orderable: true, searchable: true },
                     { data: "penjualan_tanggal", orderable: true, searchable: true },
                     { data: "user", orderable: true, searchable: true },
                     { data: "aksi", orderable: false, searchable: false }
