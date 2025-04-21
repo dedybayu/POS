@@ -13,7 +13,7 @@ class PenjualanModel extends Model
     protected $table = 't_penjualan';
     protected $primaryKey = 'penjualan_id';
 
-    protected $fillable = ['penjualan_id', 'user_id', 'barang_id', 'pembeli_id', 'penjualan_kode', 'penjualan_tanggal'];
+    protected $fillable = ['penjualan_id', 'user_id', 'barang_id', 'pembeli', 'penjualan_kode', 'penjualan_tanggal', 'created_at', 'updated_at'];
 
     public function user(): BelongsTo{
         return $this->belongsTo(UserModel::class, 'user_id', 'user_id');

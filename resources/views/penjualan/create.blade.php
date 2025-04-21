@@ -11,7 +11,7 @@
     <div class="modal-body overflow-auto" style="max-height: 70vh;">
         <div class="form-group">
             <label>Nama Pembeli</label>
-            <input type="text" name="nama_pembeli" id="nama_pembeli" class="form-control" required>
+            <input type="text" name="pembeli" id="nama_pembeli" class="form-control" required>
             <small id="error-pembeli" class="error-text form-text text-danger"></small>
         </div>
         <div class="form-group">

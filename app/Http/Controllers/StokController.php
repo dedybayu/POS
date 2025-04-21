@@ -528,4 +528,35 @@ class StokController extends Controller
 
         return $pdf->stream('Data Stok ' . date('Y-m-d H:i:s') . '.pdf');
     }
+
+    public static function update_stok(int $jumlah, $barang_id)
+    {
+        while ($jumlah > 0) {
+            // Ambil stok pertama yang masih punya stok
+            $stok = StokModel::where('barang_id', $barang_id)
+                    ->where('stok_jumlah', '>', 0)
+                    ->orderBy('stok_tanggal', 'asc') // FIFO
+                    ->first();
+    
+            // Jika tidak ada stok tersisa, hentikan
+            if (!$stok) {            
+                return false;
+            }
+    
+            if ($stok->stok_jumlah >= $jumlah) {
+                // cukup di stok ini
+                $stok->stok_jumlah -= $jumlah;
+                $stok->save();
+                $jumlah = 0;
+            } else {
+                // habiskan stok ini dan lanjutkan loop
+                $jumlah -= $stok->stok_jumlah;
+                $stok->stok_jumlah = 0;
+                $stok->save();
+            }
+        }
+    
+        return true;
+    }
+    
 }

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangModel;
+use App\Models\PenjualanDetailModel;
 use App\Models\PenjualanModel;
+use App\Models\StokModel;
 use App\Models\UserModel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Validator;
 use Yajra\DataTables\DataTables;
 
 class PenjualanController extends Controller
@@ -63,7 +66,7 @@ class PenjualanController extends Controller
                 });
                 return 'Rp' . number_format($totalHarga, 0, ',', '.') . ',00';
             })
-            
+
 
 
             ->addColumn('user', function ($penjualan) {
@@ -91,23 +94,114 @@ class PenjualanController extends Controller
             ->with('stok') // ambil stok terbaru
             ->whereHas('stok')
             ->get();
-    
+
         // dd($barang);
         return view('penjualan.create')->with([
             'barang' => $barang
         ]);
-        
+
     }
-    
+
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        dd($request); // Mengakses array 'barang[]' dari request
-    }
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                'pembeli' => 'required|string|max:100',
+                'penjualan_kode' => 'required|string|max:5|unique:t_penjualan,penjualan_kode',
+                'barang_id' => 'required|array',
+                'barang_id.*' => 'required|integer|exists:m_barang,barang_id',
+            ];
 
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                $errorMessage = 'Validasi Gagal';
+                if ($validator->errors()->has('penjualan_kode')) {
+                    $errorMessage = 'Validasi Gagal (Kode Sudah Digunakan)';
+                }
+
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage,
+                    'msgField' => $validator->errors(),
+                ]);
+            }
+
+            $dataPenjualan['pembeli'] = $request['pembeli'];
+            $dataPenjualan['penjualan_kode'] = $request['penjualan_kode'];
+            $dataPenjualan['user_id'] = auth()->user()->user_id;
+            $dataPenjualan['penjualan_tanggal'] = now();
+            $dataPenjualan['created_at'] = now();
+            $dataPenjualan['updated_at'] = now();
+
+            // dd($dataPenjualan['pembeli']);
+            $idPenjualan = 0;
+            try {
+                $idPenjualan = PenjualanModel::create($dataPenjualan)->penjualan_id;
+
+            } catch (\Throwable $th) {
+                return response()->json([
+                    // 'status' => true,
+                    'status' => false,
+                    'message' => 'Gagal Disimpan'
+                ]);
+            }
+
+            if ($idPenjualan == 0) {
+                return response()->json([
+                    // 'status' => true,
+                    'status' => false,
+                    'message' => 'Gagal Disimpan'
+                ]);
+            }
+
+            $jumlahBarang = count($request->barang_id);
+
+            for ($i = 0; $i < $jumlahBarang; $i++) {
+                $dataDetail['penjualan_id'] = $idPenjualan;
+                $dataDetail['barang_id'] = $request['barang_id'][$i];
+                $dataDetail['harga'] = $request['harga'][$i];
+                $dataDetail['jumlah'] = $request['jumlah'][$i];
+                $dataDetail['created_at'] = now();
+                $dataDetail['updated_at'] = now();
+
+                $status = StokController::update_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
+
+                if ($status == false) {
+                    return response()->json([
+                        // 'status' => true,
+                        'status' => false,
+                        'message' => 'Stok Barang Tidak Cukup'
+                    ]);
+                }
+                // PenjualanDetailModel::create($dataDetail);
+
+                try {
+                    PenjualanDetailModel::create($dataDetail);
+                } catch (\Throwable $th) {
+                    return response()->json([
+                        // 'status' => true,
+                        'status' => false,
+                        'message' => 'Gagal Disimpan'
+                    ]);
+                }
+            }
+            // dd($jumlahBarang);
+
+            return response()->json([
+                // 'status' => true,
+                'status' => false,
+                'message' => 'Data penjualan berhasil disimpan'
+            ]);
+        }
+
+        return redirect('/');
+    }
 
     /**
      * Display the specified resource.
@@ -115,24 +209,24 @@ class PenjualanController extends Controller
     public function show(string $id)
     {
         $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
-    
+
         if (!$penjualan) {
             abort(404); // atau redirect dengan pesan error
         }
-    
+
         $totalHarga = number_format($penjualan->penjualan_detail->map(function ($detail) {
             return $detail->harga * $detail->jumlah;
         })->sum(), 0, ',', '.');
 
         $user = $penjualan->user->mama . ' (' . $penjualan->user->level->level_kode . ')';
-    
+
         return view('penjualan.show', [
             'penjualan' => $penjualan,
             'total_harga' => $totalHarga,
             'user' => $user
         ]);
     }
-    
+
 
     /**
      * Show the form for editing the specified resource.
@@ -140,7 +234,7 @@ class PenjualanController extends Controller
     public function edit(string $id)
     {
         $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
-    
+
         if (!$penjualan) {
             abort(404); // atau redirect dengan pesan error
         }
@@ -198,27 +292,27 @@ class PenjualanController extends Controller
             $sheet->setCellValue('A' . $baris, $no);
             $sheet->setCellValue('B' . $baris, $data->penjualan_kode ?? '-'); // Kode Penjualan
             $sheet->setCellValue('C' . $baris, $data->pembeli ?? '-'); // Nama Pembeli
-        
+
             // Hitung total harga berdasarkan detail penjualan (harga * jumlah)
             $totalHarga = $data->penjualan_detail->sum(function ($detail) {
                 return $detail->harga * $detail->jumlah;
             });
             $sheet->setCellValue('D' . $baris, 'Rp' . number_format($totalHarga, 0, ',', '.') . ',00'); // Total Harga
-        
+
             // Format tanggal
             $sheet->setCellValue('E' . $baris, \Carbon\Carbon::parse($data->penjualan_tanggal)->format('d-m-Y H:i:s'));
-        
+
             // Nama user + kode level (jika ada)
             if ($data->user && $data->user->level) {
                 $sheet->setCellValue('F' . $baris, $data->user->nama . ' (' . $data->user->level->level_kode . ')');
             } else {
                 $sheet->setCellValue('F' . $baris, '-');
             }
-        
+
             $no++;
             $baris++;
         }
-        
+
         foreach (range('A', 'F') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
