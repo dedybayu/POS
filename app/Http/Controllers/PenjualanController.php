@@ -10,6 +10,7 @@ use App\Models\UserModel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Storage;
 use Validator;
 use Yajra\DataTables\DataTables;
 
@@ -227,6 +228,33 @@ class PenjualanController extends Controller
             'total_harga' => $totalHarga,
             'user' => $user
         ]);
+    }
+
+    public function export_detail_pdf(string $id)
+    {
+        $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
+
+        if (!$penjualan) {
+            abort(404); // atau redirect dengan pesan error
+        }
+
+        $totalHarga = number_format($penjualan->penjualan_detail->map(function ($detail) {
+            return $detail->harga * $detail->jumlah;
+        })->sum(), 0, ',', '.');
+
+        $user = $penjualan->user->mama . ' (' . $penjualan->user->level->level_kode . ')';
+
+
+        $pdf = Pdf::loadView('penjualan.export_detail_pdf', [
+            'penjualan' => $penjualan,
+            'total_harga' => $totalHarga,
+            'user' => $user
+        ]);
+        $pdf->setPaper('a4', 'portrait'); // set ukuran kertas dan orientasi
+        $pdf->setOption("isRemoteEnabled", true); // set true jika ada gambar dari url
+        $pdf->render();
+
+        return $pdf->stream('Detail Penjualan ' . date('Y-m-d H:i:s') . '.pdf');
     }
 
 
@@ -477,6 +505,171 @@ class PenjualanController extends Controller
         return redirect('/');
     }
 
+    public function import()
+    {
+        return view('penjualan.import');
+    }
+
+
+    public function import_excel(Request $request)
+    {
+        // return 'hallo';
+        if ($request->ajax() || $request->wantsJson()) {
+            $rules = [
+                // validasi file harus xls atau xlsx, max 1MB
+                'file_penjualan' => ['required', 'mimes:xlsx', 'max:1024']
+            ];
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validasi Gagal',
+                    'msgField' => $validator->errors()
+                ]);
+            }
+
+
+            $file = $request->file('file_penjualan');
+
+            if (!$file->isValid()) {
+                return response()->json(['error' => 'Invalid file'], 400);
+            }
+
+            // Nama file unik
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            // Pastikan folder penyimpanan ada
+            $destinationPath = storage_path('app/public/file_penjualan');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+
+            $file->move($destinationPath, $filename);
+
+            $filePathRelative = "file_penjualan/$filename";
+            $filePath = storage_path("app/public/file_penjualan/$filename"); // Simpan path gambar
+
+            $reader = IOFactory::createReader('Xlsx'); // load reader file excel
+            $reader->setReadDataOnly(true); // hanya membaca data
+            $spreadsheet = $reader->load($filePath); // load file excel
+            $sheet = $spreadsheet->getActiveSheet(); // ambil sheet yang aktif
+            $data = $sheet->toArray(null, false, true, true); // ambil data excel
+            // dd($data);
+
+
+            // Hapus file setelah proses
+            if (Storage::disk('public')->exists($filePathRelative)) {
+                Storage::disk('public')->delete($filePathRelative);
+            }
+
+            $insert = [];
+            $jumlahBarisData = 0;
+
+            // Tangkap Nama Pembeli dan Kode
+            $nama_pembeli = trim($data[1]['B'] ?? ''); // Baris 1 kolom B
+            $penjualan_kode = trim($data[2]['B'] ?? ''); // Baris 2 kolom B
+            $user_id = auth()->user()->user_id;
+
+
+            // dd($nama_pembeli);
+
+            if (!$nama_pembeli || !$penjualan_kode) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Nama pembeli atau Kode Kosong"
+                ]);
+            }
+            // Validasi Header Baris ke-3 (index ke-2)
+            $expectedHeader = ['A' => 'barang_id', 'B' => 'jumlah'];
+            $actualHeader = $data[3] ?? [];
+
+            foreach ($expectedHeader as $col => $expected) {
+                if (strtolower(trim($actualHeader[$col] ?? '')) !== strtolower($expected)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Header kolom $col tidak valid. Harus '$expected'."
+                    ]);
+                }
+            }
+
+            // Cek apakah penjualan_kode sudah ada di database
+            $penjualanExists = PenjualanModel::where('penjualan_kode', $penjualan_kode)->exists();
+
+            if (!$penjualanExists) {
+                foreach ($data as $baris => $value) {
+                    if ($baris >= 4) { // Mulai dari baris ke-4 (index ke-3)
+                        $jumlahBarisData++;
+
+                        $barang_id = trim($value['A'] ?? '');
+                        $jumlah = trim($value['B'] ?? '');
+                        $harga = BarangModel::where('barang_id', $barang_id)->value('harga_jual');
+                        // Cek Stok
+                        if (!StokController::cek_stok($jumlah, $barang_id)) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => "Terdapat barang yang stoknya tidak ada/kurang"
+                            ]);
+                        }
+
+                        if ($barang_id && $jumlah) {
+                            $insert[] = [
+                                // 'nama_pembeli' => $idPenjualan,
+                                'barang_id' => $barang_id,
+                                'jumlah' => $jumlah,
+                                'harga' => $harga,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+                }
+
+                // Insert ke database
+                if (!empty($insert)) {
+                    try {
+                        $idPenjualan = PenjualanModel::create([
+                            'pembeli' => $nama_pembeli,
+                            'penjualan_kode' => $penjualan_kode,
+                            'user_id' => $user_id,
+                            'penjualan_tanggal' => now()
+                        ])->penjualan_id;
+
+                        // dd($idPenjualan);
+                        for ($i = 0; $i < count($insert); $i++) {
+                            $insert[$i]['penjualan_id'] = $idPenjualan;
+                            StokController::update_stok($insert[$i]['jumlah'], $insert[$i]['barang_id']);
+                        }
+
+                        PenjualanDetailModel::insert($insert);
+                        return response()->json([
+                            'status' => true,
+                            'message' => 'Data Penjualan Berhasil Diimport',
+                        ]);
+
+                    } catch (\Exception $e) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Terjadi kesalahan "Data Tidak Valid"',
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Tidak ada data untuk di import"
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Penjualan dengan kode '$penjualan_kode' sudah ada."
+                ]);
+            }
+        }
+
+        return redirect('/');
+    }
 
     public function export_excel()
     {

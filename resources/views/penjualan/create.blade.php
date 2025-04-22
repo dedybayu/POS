@@ -213,7 +213,7 @@
         let newRow = '';
 
         $(document).on('click', '#button-tambah', function () {
-            const newRow = $('#template-row').html(); // ambil isi template
+            newRow = $('#template-row').html(); // ambil isi template
             $('#form-container').append(newRow);
             initSelect2();
         });

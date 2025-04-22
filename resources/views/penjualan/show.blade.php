@@ -55,13 +55,13 @@
             </thead>
             <tbody>
                 @foreach ($penjualan->penjualan_detail as $i => $detail)
-                <tr>
-                    <td>{{ $i + 1 }}</td>
-                    <td>{{ $detail->barang->barang_nama ?? '-' }}</td>
-                    <td>Rp{{ number_format($detail->harga, 0, ',', '.') }},00</td>
-                    <td>{{ $detail->jumlah }}</td>
-                    <td>Rp{{ number_format($detail->harga * $detail->jumlah, 0, ',', '.') }},00</td>
-                </tr>
+                    <tr>
+                        <td>{{ $i + 1 }}</td>
+                        <td>{{ $detail->barang->barang_nama ?? '-' }}</td>
+                        <td>Rp{{ number_format($detail->harga, 0, ',', '.') }},00</td>
+                        <td>{{ $detail->jumlah }}</td>
+                        <td>Rp{{ number_format($detail->harga * $detail->jumlah, 0, ',', '.') }},00</td>
+                    </tr>
                 @endforeach
             </tbody>
             <tfoot>
@@ -71,10 +71,12 @@
                 </tr>
             </tfoot>
         </table>
-        
+
     </div>
     <div class="modal-footer">
-        <button onclick="modalAction('{{ url('/penjualan/' . $penjualan->penjualan_id . '/edit_ajax') }}')" 
+        <a href="{{ url('/penjualan/' . $penjualan->penjualan_id . '/export_detail_pdf') }}" class="btn btn-sm btn-warning mt-1"><i class="fa fa-file-pdf"></i>
+            Export Detail Penjualan</a>
+        <button onclick="modalAction('{{ url('/penjualan/' . $penjualan->penjualan_id . '/edit') }}')"
             class="btn btn-success btn-sm">Edit
         </button>
         <button type="button" data-dismiss="modal" class="btn btn-primary btn-sm">Close</button>
