@@ -7,6 +7,7 @@ use App\Models\PenjualanDetailModel;
 use App\Models\PenjualanModel;
 use App\Models\StokModel;
 use App\Models\UserModel;
+use Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -76,12 +77,35 @@ class PenjualanController extends Controller
             })
 
             ->addIndexColumn()->addColumn('aksi', function ($penjualan) {
-                $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/edit') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
-                    '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                if (Auth::check() && in_array(Auth::user()->getRole(), ['ADM', 'MNG'])) {
+                    // Akses diizinkan untuk role ADM dan MNG
+                    // Lanjutkan proses
+                    $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/edit') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                } else if (
+                    Auth::check() &&
+                    in_array(Auth::user()->getRole(), ['ADM', 'MNG', 'STF']) &&
+                    $penjualan->user_id == Auth::user()->user_id
+                ) {
+                    $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/edit') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                } else {
+                    $btn = '<button onclick="modalAction(\'' . url('/penjualan/' . $penjualan->penjualan_id .
+                        '/show') . '\')" class="btn btn-info btn-sm">Detail</button> ';
+                    $btn .= '<button class="btn btn-secondary btn-sm" disabled>Edit</button> ';
+                    $btn .= '<button class="btn btn-dark btn-sm" disabled>Hapus</button>';
+
+                }
+
+
                 return $btn;
             })->rawColumns(['aksi'])
             ->make(true);
@@ -322,7 +346,6 @@ class PenjualanController extends Controller
 
             $dataPenjualan['pembeli'] = $request['pembeli'];
             $dataPenjualan['penjualan_kode'] = $request['penjualan_kode'];
-            $dataPenjualan['user_id'] = auth()->user()->user_id;
             $dataPenjualan['penjualan_tanggal'] = now();
             // $dataPenjualan['created_at'] = now();
             $dataPenjualan['updated_at'] = now();
@@ -330,6 +353,8 @@ class PenjualanController extends Controller
             // dd($dataPenjualan['pembeli']);
             try {
                 $penjualan = PenjualanModel::findOrFail($id);
+                $userIdLama = $penjualan->user_id;
+                $dataPenjualan['user_id'] = $userIdLama;
 
                 $penjualan->update($dataPenjualan);
 

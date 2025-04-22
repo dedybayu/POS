@@ -76,9 +76,13 @@
     <div class="modal-footer">
         <a href="{{ url('/penjualan/' . $penjualan->penjualan_id . '/export_detail_pdf') }}" class="btn btn-sm btn-warning mt-1"><i class="fa fa-file-pdf"></i>
             Export Detail Penjualan</a>
+        @if ( Auth::check() &&
+            in_array(Auth::user()->getRole(), ['ADM', 'MNG', 'STF']) &&
+            $penjualan->user_id == Auth::user()->user_id)
         <button onclick="modalAction('{{ url('/penjualan/' . $penjualan->penjualan_id . '/edit') }}')"
             class="btn btn-success btn-sm">Edit
         </button>
+        @endif
         <button type="button" data-dismiss="modal" class="btn btn-primary btn-sm">Close</button>
     </div>
 @endempty

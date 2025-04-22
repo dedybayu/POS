@@ -7,6 +7,7 @@ use App\Models\KategoriModel;
 use App\Models\StokModel;
 use App\Models\SupplierModel;
 use App\Models\UserModel;
+use Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -83,12 +84,18 @@ class StokController extends Controller
             ->addIndexColumn()->addColumn('aksi', function ($stok) {
                 $btn = '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id)
                     . '\')" class="btn btn-info btn-sm">Detail</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
+
+                if (Auth::check() && in_array(Auth::user()->getRole(), ['ADM', 'MNG'])) {
+                    // Akses diizinkan untuk role ADM dan MNG
+                    // Lanjutkan proses
+                    $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
                     '/edit') . '\')" class="btn btn-success btn-sm">Edit</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
-                    '/tambah') . '\')" class="btn btn-warning btn-sm">Tambah</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
-                    '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
+                        '/tambah') . '\')" class="btn btn-warning btn-sm">Tambah</button> ';
+                    $btn .= '<button onclick="modalAction(\'' . url('/stok/' . $stok->stok_id .
+                        '/delete') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
+                }
+
                 return $btn;
             })->rawColumns(['aksi'])
             ->make(true);
@@ -579,19 +586,19 @@ class StokController extends Controller
     public static function cek_stok(int $jumlah, $barang_id): bool
     {
         $sisa = $jumlah;
-    
+
         while ($sisa > 0) {
             // Ambil stok pertama yang masih punya stok
             $stok = StokModel::where('barang_id', $barang_id)
                 ->where('stok_jumlah', '>', 0)
                 ->orderBy('stok_tanggal', 'asc') // FIFO
                 ->first();
-    
+
             // Jika tidak ada stok tersisa, hentikan
             if (!$stok) {
                 return false;
             }
-    
+
             if ($stok->stok_jumlah >= $sisa) {
                 // cukup stok, keluar loop
                 $sisa = 0;
@@ -600,10 +607,10 @@ class StokController extends Controller
                 $sisa -= $stok->stok_jumlah;
             }
         }
-    
+
         return true;
     }
-    
+
 
 
     public static function update_stok(int $jumlah, $barang_id)

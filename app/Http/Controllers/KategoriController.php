@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\KategoriModel;
+use Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use DB;
 use Illuminate\Http\Request;
@@ -54,8 +55,10 @@ class KategoriController extends Controller
     
                 $btn = '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
                     '/show_ajax') . '\')" class="btn btn-info btn-sm">Detail</button> ';
-                $btn .= '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
-                    '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                if (Auth::check() && in_array(Auth::user()->getRole(), ['ADM', 'MNG'])) {
+                    $btn .= '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
+                        '/edit_ajax') . '\')" class="btn btn-warning btn-sm">Edit</button> ';
+                }
                 $btn .= '<button onclick="modalAction(\'' . url('/kategori/' . $kategori->kategori_id .
                     '/delete_ajax') . '\')" class="btn btn-danger btn-sm">Hapus</button> ';
                 return $btn;

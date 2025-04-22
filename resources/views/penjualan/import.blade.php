@@ -1,29 +1,28 @@
-<form action="{{ url('/penjualan/import_excel') }}" method="POST" id="form-import" enctype="multipart/form-data">
+<form action="{{ url('/penjualan/import') }}" method="POST" id="form-import" enctype="multipart/form-data">
     @csrf
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Import Data Penjualan</h5>
-                <button type="button" class="close" data-dismiss="modal" arialabel="Close"><span
-                        aria-hidden="true">&times;</span></button>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Import Data Penjualan</h5>
+            <button type="button" class="close" data-dismiss="modal" arialabel="Close"><span
+                    aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Download Template</label>
+                <a href="{{ asset('template_penjualan.xlsx') }}" class="btn btn-info btnsm" download><i
+                        class="fa fa-file-excel"></i>Download</a>
+                <small id="error-penjualan" class="error-text form-text textdanger"></small>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Download Template</label>
-                    <a href="{{ asset('template_penjualan.xlsx') }}" class="btn btn-info btnsm" download><i
-                            class="fa fa-file-excel"></i>Download</a>
-                    <small id="error-penjualan" class="error-text form-text textdanger"></small>
-                </div>
-                <div class="form-group">
-                    <label>Pilih File</label>
-                    <input type="file" name="file_penjualan" id="file_penjualan" class="formcontrol" required>
-                    <small id="error-file_penjualan" class="error-text form-text textdanger"></small>
-                </div>
+            <div class="form-group">
+                <label>Pilih File</label>
+                <input type="file" name="file_penjualan" id="file_penjualan" class="formcontrol" required>
+                <small id="error-file_penjualan" class="error-text form-text textdanger"></small>
             </div>
-            <div class="modal-footer">
-
-                <button type="button" data-dismiss="modal" class="btn btnwarning">Batal</button>
-                <button type="submit" class="btn btn-primary">Upload</button>
-            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" data-dismiss="modal" class="btn btnwarning">Batal</button>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
     </div>
 </form>
 <script>

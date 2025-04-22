@@ -52,12 +52,13 @@
         </table>
     </div>
     <div class="modal-footer">
-        <button onclick="modalAction('{{ url('/stok/' . $stok->stok_id . '/tambah') }}')" 
-            class="btn btn-warning btn-sm">Tambah
-        </button>
-        <button onclick="modalAction('{{ url('/stok/' . $stok->stok_id . '/edit') }}')" 
-            class="btn btn-success btn-sm">Edit
-        </button>
+        @if(Auth::check() && in_array(Auth::user()->getRole(), ['ADM', 'MNG']))
+            <button onclick="modalAction('{{ url('/stok/' . $stok->stok_id . '/tambah') }}')"
+                class="btn btn-warning btn-sm">Tambah
+            </button>
+            <button onclick="modalAction('{{ url('/stok/' . $stok->stok_id . '/edit') }}')" class="btn btn-success btn-sm">Edit
+            </button>
+        @endif
         <button type="button" data-dismiss="modal" class="btn btn-primary btn-sm">Close</button>
     </div>
 @endempty

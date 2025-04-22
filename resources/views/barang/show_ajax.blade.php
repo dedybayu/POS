@@ -48,9 +48,11 @@
         </table>
     </div>
     <div class="modal-footer">
-        <button onclick="modalAction('{{ url('/barang/' . $barang->barang_id . '/edit_ajax') }}')" 
-            class="btn btn-success btn-sm">Edit
-        </button>
+        @if(Auth::check() && in_array(Auth::user()->getRole(), ['ADM', 'MNG']))
+            <button onclick="modalAction('{{ url('/barang/' . $barang->barang_id . '/edit_ajax') }}')"
+                class="btn btn-success btn-sm">Edit
+            </button>
+        @endif
         <button type="button" data-dismiss="modal" class="btn btn-primary btn-sm">Close</button>
     </div>
 @endempty

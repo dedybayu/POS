@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () { // artinya semua route di dalam
             Route::get('/export_excel', [SupplierController::class, 'export_excel']);
             Route::get('/export_pdf', [SupplierController::class, 'export_pdf']);
         });
+
     });
 
     Route::middleware(['authorize:ADM,MNG,STF'])->group(function () {
