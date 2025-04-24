@@ -119,7 +119,11 @@ class PenjualanController extends Controller
             ->with('stok') // ambil stok terbaru
             ->whereHas('stok')
             ->get();
-
+        foreach ($barang as $brg) {
+            $brg['real_stok'] = StokController::get_real_stok($brg['barang_id']);
+        }
+        // foreach ($barang) { 
+        // }
         // dd($barang);
         return view('penjualan.create')->with([
             'barang' => $barang
@@ -197,7 +201,7 @@ class PenjualanController extends Controller
                 $dataDetail['created_at'] = now();
                 $dataDetail['updated_at'] = now();
 
-                $status = StokController::update_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
+                $status = StokController::get_status_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
 
                 if ($status == false) {
                     return response()->json([
@@ -508,6 +512,22 @@ class PenjualanController extends Controller
             $penjualan = PenjualanModel::find($id);
             if ($penjualan) {
                 try {
+                    $penjualanDetail  = PenjualanDetailModel::where('penjualan_id', $id)->get();
+
+                    // dd($penjualanDetail);
+
+                    foreach ($penjualanDetail as $key => $detail) {
+                        // $idBarang = $detail->barang_id;
+                        $status = StokController::update_stok_edit(-$detail->jumlah, $detail->barang_id);
+                        if ($status == false) {
+                            return response()->json([
+                                // 'status' => true,
+                                'status' => false,
+                                'message' => 'Stok Barang Tidak Ada'
+                            ]);
+                        }
+                        // StokController::update_stok_edit()
+                    }
                     PenjualanDetailModel::where('penjualan_id', $id)->delete();
                     $penjualan->delete();
                     return response()->json([

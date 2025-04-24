@@ -31,7 +31,7 @@
                             <option value="" disabled selected>- Pilih -</option>
                             @foreach($barang as $item)
                                 <option value="{{ $item->barang_id }}" data-harga="{{ $item->harga_jual }}"
-                                    data-stok="{{ $item->stok->sum('stok_jumlah') }}">
+                                    data-stok="{{ $item->real_stok }}">
                                     ({{ $item->barang_kode }}) {{ $item->barang_nama }}
                                 </option>
                             @endforeach
@@ -109,7 +109,7 @@
                 <select class="form-control barang-select" name="barang_id[]" style="width: 100%" required>
                     <option value="" disabled selected>- Pilih -</option>
                     @foreach($barang as $item)
-                        <option value="{{ $item->barang_id }}" data-harga="{{ $item->harga_jual }}" data-stok="{{ $item->stok->sum('stok_jumlah') }}">
+                        <option value="{{ $item->barang_id }}" data-harga="{{ $item->harga_jual }}" data-stok="{{ $item->real_stok }}">
                             ({{ $item->barang_kode }}) {{ $item->barang_nama }}
                         </option>
                     @endforeach

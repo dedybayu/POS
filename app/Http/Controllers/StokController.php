@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BarangModel;
 use App\Models\KategoriModel;
+use App\Models\PenjualanDetailModel;
 use App\Models\StokModel;
 use App\Models\SupplierModel;
 use App\Models\UserModel;
@@ -130,9 +131,9 @@ class StokController extends Controller
                 'supplier_id' => 'required',
                 'barang_id' => [
                     'required',
-                    Rule::unique('t_stok')->where(function ($query) use ($request) {
-                        return $query->where('supplier_id', $request->supplier_id);
-                    }),
+                    // Rule::unique('t_stok')->where(function ($query) use ($request) {
+                    //     return $query->where('supplier_id', $request->supplier_id);
+                    // }),
                 ],
                 'stok_jumlah' => 'required',
             ];
@@ -697,5 +698,23 @@ class StokController extends Controller
         return true;
     }
 
+    public static function get_real_stok(int $barang_id){
+        $stokMasuk = StokModel::where('barang_id', $barang_id)->sum('stok_jumlah');
+        $stokKeluar = PenjualanDetailModel::where('barang_id', $barang_id)->sum('jumlah');
+    
+        return $stokMasuk - $stokKeluar;
+    }
 
+    public static function get_status_stok(int $jumlah, $barang_id)
+    {
+        $totalStok = self::get_real_stok($barang_id);
+    
+        // Misal: cek apakah stok cukup
+        if ($jumlah > $totalStok) {
+            return false;
+        }
+    
+        return true;
+    }
+    
 }
