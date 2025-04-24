@@ -57,8 +57,8 @@
                             class="nav-icon far fa-list-alt"></i>
                         <p>Data Barang</p>
                     </a> </li>
-                <li class="nav-item"> <a href="{{ url('/stok') }}"
-                        class="nav-link {{ ($activeMenu == 'stok') ? 'active' : '' }} "> <i
+                <li class="nav-item"> <a href="{{ url('/real_stok') }}"
+                        class="nav-link {{ ($activeMenu == 'real_stok') ? 'active' : '' }} "> <i
                             class="nav-icon fas fa-cubes"></i>
                         <p>Stok Barang</p>
                     </a> </li>
@@ -70,6 +70,11 @@
                         class="nav-link {{ ($activeMenu == 'supplier') ? 'active' : '' }} "> <i
                             class="nav-icon fas fa-car"></i>
                         <p>Supplier</p>
+                    </a> </li>
+                <li class="nav-item"> <a href="{{ url('/stok') }}"
+                        class="nav-link {{ ($activeMenu == 'stok') ? 'active' : '' }} "> <i
+                            class="nav-icon fas fa-cubes"></i>
+                        <p>Supplay Stok Barang</p>
                     </a> </li>
             @endif
 
