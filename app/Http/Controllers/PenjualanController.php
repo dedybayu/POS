@@ -116,20 +116,19 @@ class PenjualanController extends Controller
     public function create()
     {
         $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')
-            ->with('stok') // ambil stok terbaru
+            ->with('stok')
             ->whereHas('stok')
-            ->get();
-        foreach ($barang as $brg) {
-            $brg['real_stok'] = StokController::get_real_stok($brg['barang_id']);
-        }
-        // foreach ($barang) { 
-        // }
-        // dd($barang);
+            ->get()
+            ->filter(function ($brg) {
+                return $brg->real_stok > 0;
+            })
+            ->values(); // reset keys
+
         return view('penjualan.create')->with([
             'barang' => $barang
         ]);
-
     }
+
 
 
     /**
@@ -292,18 +291,27 @@ class PenjualanController extends Controller
     public function edit(string $id)
     {
         $penjualan = PenjualanModel::with('penjualan_detail.barang', 'user.level')->find($id);
-
+    
         if (!$penjualan) {
             abort(404); // atau redirect dengan pesan error
         }
-        // dd($id);
-        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')->get();
-
+    
+        // Ambil hanya barang dengan real stok > 0
+        $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')
+            ->with('stok')
+            ->whereHas('stok')
+            ->get()
+            ->filter(function ($brg) {
+                return $brg->real_stok > 0;
+            })
+            ->values();
+    
         return view('penjualan.edit')->with([
             'penjualan' => $penjualan,
             'barang' => $barang
         ]);
     }
+    
 
     /**
      * Update the specified resource in storage.
@@ -383,7 +391,11 @@ class PenjualanController extends Controller
                     $dataDetail['created_at'] = now();
                     $dataDetail['updated_at'] = now();
 
-                    $status = StokController::update_stok_edit($request['status'][$i], $dataDetail['barang_id']);
+                    // $status = StokController::update_stok_edit($request['status'][$i], $dataDetail['barang_id']);
+                    $status = true;
+                    if ($request['status'][$i] > 0) {
+                        $status = StokController::get_status_stok($request['status'][$i], $dataDetail['barang_id']);
+                    }
 
                     if ($status == false) {
                         return response()->json([
@@ -419,7 +431,8 @@ class PenjualanController extends Controller
                     $dataDetail['created_at'] = now();
                     $dataDetail['updated_at'] = now();
 
-                    $status = StokController::update_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
+                    // $status = StokController::update_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
+                    $status = StokController::get_status_stok($dataDetail['jumlah'], $dataDetail['barang_id']);
 
                     if ($status == false) {
                         return response()->json([
@@ -447,15 +460,15 @@ class PenjualanController extends Controller
                 $jumlahHapusBarang = count($request->detail_id_dihapus);
                 for ($i = 0; $i < $jumlahHapusBarang; $i++) {
 
-                    $status = StokController::update_stok_edit(-$request['jumlah_dihapus'][$i], $request['barang_id_dihapus'][$i]);
+                    // $status = StokController::update_stok_edit(-$request['jumlah_dihapus'][$i], $request['barang_id_dihapus'][$i]);
 
-                    if ($status == false) {
-                        return response()->json([
-                            // 'status' => true,
-                            'status' => false,
-                            'message' => 'Stok Barang Tidak Cukup'
-                        ]);
-                    }
+                    // if ($status == false) {
+                    //     return response()->json([
+                    //         // 'status' => true,
+                    //         'status' => false,
+                    //         'message' => 'Stok Barang Tidak Cukup'
+                    //     ]);
+                    // }
                     PenjualanDetailModel::whereIn('detail_id', $request['detail_id_dihapus'])->delete();
 
                     try {
@@ -512,7 +525,7 @@ class PenjualanController extends Controller
             $penjualan = PenjualanModel::find($id);
             if ($penjualan) {
                 try {
-                    $penjualanDetail  = PenjualanDetailModel::where('penjualan_id', $id)->get();
+                    $penjualanDetail = PenjualanDetailModel::where('penjualan_id', $id)->get();
 
                     // dd($penjualanDetail);
 

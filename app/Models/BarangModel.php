@@ -27,4 +27,13 @@ class BarangModel extends Model
     {
         return $this->hasMany(PenjualanDetailModel::class, 'barang_id', 'barang_id');
     }
+
+    public function getRealStokAttribute()
+{
+    $stokMasuk = $this->stok()->sum('stok_jumlah');
+    $stokKeluar = PenjualanDetailModel::where('barang_id', $this->barang_id)->sum('jumlah');
+
+    return $stokMasuk - $stokKeluar;
+}
+
 }
