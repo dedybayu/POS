@@ -23,7 +23,10 @@ class WelcomeController extends Controller
         $jumlahUser = UserModel::count();
         $jumlahLevel = LevelModel::count();
         $totalPendapatan = PenjualanDetailModel::sum('harga');
-        $totalStok = StokModel::sum('stok_jumlah');
+        // $totalStok = BarangModel::sum('real_stok');
+        $totalStok = BarangModel::all()->sum(function ($barang) {
+            return $barang->real_stok;
+        });
         $jumlahBarang = BarangModel::count();
         $jumlahKategori = KategoriModel::count();
         $jumlahSupplier = SupplierModel::count();

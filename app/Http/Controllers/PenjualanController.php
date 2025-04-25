@@ -117,7 +117,6 @@ class PenjualanController extends Controller
     {
         $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')
             ->with('stok')
-            ->whereHas('stok')
             ->get()
             ->filter(function ($brg) {
                 return $brg->real_stok > 0;
@@ -299,7 +298,6 @@ class PenjualanController extends Controller
         // Ambil hanya barang dengan real stok > 0
         $barang = BarangModel::select('barang_id', 'barang_nama', 'barang_kode', 'harga_jual')
             ->with('stok')
-            ->whereHas('stok')
             ->get()
             ->filter(function ($brg) {
                 return $brg->real_stok > 0;

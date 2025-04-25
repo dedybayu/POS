@@ -4,7 +4,7 @@
     <!-- Default box -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Hallo {{auth()->user()->nama}}, Apa Kabar</h3>
+            <h3 class="card-title">Hallo {{auth()->user()->nama}}, Apa Kabar?</h3>
 
             <div class="card-tools"></div>
         </div>
@@ -123,7 +123,7 @@
                         <div class="icon">
                             <i class="ion ion-person-add"></i>
                         </div>
-                        <a href="barang" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                        <a href="real_stok" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
                 <!-- ./col -->
