@@ -72,6 +72,16 @@ Route::get('supplier/{supplier}', [SupplierController::class, 'show']);
 Route::put('supplier/{supplier}', [SupplierController::class, 'update']);
 Route::delete('supplier/{supplier}', [SupplierController::class, 'destroy']);
 
+
+use App\Http\Controllers\Api\PenjualanController;
+
+Route::post('/penjualan', [PenjualanController::class, 'store']);
+Route::get('/penjualan/{penjualan}', [PenjualanController::class, 'show']);
+
+
+
+// Route::post('/penjualan', App\Http\Controllers\Api\PenjualanController::class, 'create')->name('penjualan');
+
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
